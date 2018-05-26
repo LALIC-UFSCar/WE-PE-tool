@@ -4,9 +4,8 @@ import tkinter.ttk as ttk
 import tkinter.messagebox as msgb
 import os
 import queue
-import gettext
 from readers.read_blast import BlastReader
-from readers.read_muse_embeds import load_embeddings, MuseReader
+from readers.read_muse_embeds import MuseReader
 from post_edit import PostEditor
 
 

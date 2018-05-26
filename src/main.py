@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 #  -*- coding: utf-8 -*-
-import sys
 import gettext
 import locale
 import tkinter as tk
 import tkinter.filedialog as fdialog
-sys.path.insert(0, '/home/marciolima/Documentos/Lalic/word_embeddings')
 from ape_window import PostEditWindow
 from readers.read_ape import ApeReader
-
 
 try:
     gettext.translation('ape', localedir='locale', languages=[locale.getlocale()[0]]).install()
