@@ -65,7 +65,7 @@ class Application(object):
         # APE
         self.widget_cor = tk.Frame(self.master)
         self.widget_cor.grid(row=3, column=0, pady=10, padx=10, sticky=tk.W)
-        self.label_cor = tk.Label(self.widget_cor, text='APE')
+        self.label_cor = tk.Label(self.widget_cor, text=_('APE'))
         self.label_cor.grid(row=0, column=0, rowspan=4, padx=(0, 10))
         self.cor_list = tk.Listbox(self.widget_cor, width=35, height=5)
         self.cor_list.grid(row=0, column=1, rowspan=4, padx=(0, 10))
