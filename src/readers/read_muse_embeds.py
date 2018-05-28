@@ -56,15 +56,16 @@ def load_embeddings(path_en, path_pt):
 
 
 def closest_words(word, emb_en, emb_pt, words_to_ignore=None):
+    if not words_to_ignore:
+        words_to_ignore = list()
     try:
         u = emb_en[word]
     except KeyError:
         return ['***']
     else:
-        close = list()
-
-        close = [(k, cosine(u, emb_pt[k]))
-                 for k in list(emb_pt.keys()) if k not in words_to_ignore]
-        close = sorted(close, key=lambda x: x[1])
-        close = [w if w else '***' for w in close[:5]]
-        return close
+        words = np.array(list(emb_pt))
+        similarities = np.array(
+            [cosine(u, emb_pt[k]) if k not in words_to_ignore else float('Inf') for k in words])
+        similarities_indices = similarities.argsort()[:5]
+        return list(zip(words[similarities_indices],
+                        similarities[similarities_indices]))
