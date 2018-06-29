@@ -1,3 +1,4 @@
+'''APE using Word Embeddings execution window'''
 import tkinter as tk
 import tkinter.filedialog as fdialog
 import tkinter.ttk as ttk
@@ -10,6 +11,11 @@ from post_edit import PostEditor
 
 
 class PostEditWindow(object):
+    '''
+    APE Window class.
+    Contains implementation for selecting the BLAST file and the bilingual embeddings files.
+    Also creates threads to perform the APE and deal with cancelling events.
+    '''
 
     def __init__(self, application):
         self.app = application
@@ -89,6 +95,9 @@ class PostEditWindow(object):
             'WM_DELETE_WINDOW', self.close_window_callback)
 
     def get_filename_callback(self, event):
+        '''
+        Select a file and set the according path view.
+        '''
         filename = fdialog.askopenfile(title=_('Select a file'))
         try:
             assert filename
@@ -112,6 +121,10 @@ class PostEditWindow(object):
                 self.pt_path_text.config(state=tk.DISABLED)
 
     def close_window_callback(self):
+        '''
+        Treats closing window.
+        Needs to wait for all threads to stop running.
+        '''
         self.cancel_ape_callback()
         self.should_close = True
         self.running_threads = [
@@ -122,10 +135,17 @@ class PostEditWindow(object):
             self.blast_window.after(100, self.close_window_callback)
 
     def cancel_ape_callback(self):
+        '''
+        Button Cancel pressed, but does not close the window.
+        '''
         self.cancel_ape_button.config(state=tk.DISABLED)
         self.stop = True
 
     def load_muse(self):
+        '''
+        Loads MUSE embeddings files.
+        Each file is loaded by a separate thread.
+        '''
         en_path = self.en_path_text.get('1.0', tk.END).strip()
         pt_path = self.pt_path_text.get('1.0', tk.END).strip()
 
@@ -137,6 +157,7 @@ class PostEditWindow(object):
                 _('Select files'), _('It is necessary to select all files.'))
         else:
             try:
+                # Source embeddings thread
                 self.running_threads.append(MuseReader(
                     self, en_path, self.muse_en_queue))
             except FileNotFoundError:
@@ -144,6 +165,7 @@ class PostEditWindow(object):
                     _('File not found'), _('MUSE file for English Embeddings not found.'))
             else:
                 try:
+                    # Target embeddings thread
                     self.running_threads.append(MuseReader(
                         self, pt_path, self.muse_pt_queue))
                 except FileNotFoundError:
@@ -160,6 +182,10 @@ class PostEditWindow(object):
                     self.error_menu.config(state=tk.DISABLED)
 
     def load_blast(self):
+        '''
+        Loads BLAST file.
+        Filters the errors by the one selected by the user.
+        '''
         blast_path = self.blast_path_text.get('1.0', tk.END).strip()
 
         try:
@@ -180,6 +206,7 @@ class PostEditWindow(object):
                 self.filename = os.path.splitext(os.path.split(blast_path)[1])[
                     0] + '_APE_' + self.error_type.get()
 
+                # Progress bar to track the APE process
                 progress_var = tk.DoubleVar()
                 self.progress_bar = ttk.Progressbar(
                     self.blast_window, variable=progress_var, maximum=len(errors))
@@ -188,11 +215,16 @@ class PostEditWindow(object):
                     row=5, column=0, columnspan=3, pady=10)
                 self.progress_bar.grid(row=4, column=0, columnspan=3, pady=10)
 
+                # Post Editing Thread
                 self.running_threads.append(
                     PostEditor(self, blast_reader, progress_var))
                 self.blast_window.after(100, self.ape_queue_callback)
 
     def load_muse_callback(self):
+        '''
+        Checks if MUSE files were completely loaded.
+        If both were loaded and the program must not stop, performs the APE
+        on the BLAST file'''
         try:
             if not self.emb_en:
                 self.emb_en = self.muse_en_queue.get_nowait()
@@ -205,6 +237,10 @@ class PostEditWindow(object):
                 self.load_blast()
 
     def ape_queue_callback(self):
+        '''
+        Checks if the APE has finished.
+        If the thread has been canceled, re-enable buttons
+        '''
         try:
             msg = self.ape_queue.get_nowait()
             if msg == 0:
