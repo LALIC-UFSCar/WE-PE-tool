@@ -32,6 +32,8 @@ class Application(object):
         self.blastmenu = tk.Menu(self.menubar, tearoff=0)
         self.blastmenu.add_command(
             label=_('Open'), command=lambda: PostEditWindow(self))
+        self.blastmenu.add_command(
+            label=_('Statistics'), command=lambda: BLASTStatsWindow(self))
         self.menubar.add_cascade(label='BLAST', menu=self.blastmenu)
 
         self.master.config(menu=self.menubar)
