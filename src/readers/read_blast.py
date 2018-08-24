@@ -1,7 +1,7 @@
 class BlastReader(object):
 
     def __init__(self, filename):
-        self.__error_lines = list()
+        self.error_lines = list()
         self.src_lines = list()
         self.ref_lines = list()
         self.sys_lines = list()
@@ -24,18 +24,28 @@ class BlastReader(object):
                 errors = [e.split('#') for e in blast_file.readline().split()]
 
                 for error in errors:
-                    error_indexes = [list(map(int, e.split(','))) for e in error[:-1]]
+                    error_indexes = [list(map(int, e.split(',')))
+                                     for e in error[:-1]]
                     error_indexes.append(error[-1])
-                    self.__error_lines.append((line, error_indexes))
+                    self.error_lines.append((line, error_indexes))
 
                 line = line + 1
 
     def get_filtered_errors(self, tags):
-        return [e for e in self.__error_lines if e[1][-1] in tags]
+        return [e for e in self.error_lines if e[1][-1] in tags]
 
     def get_incorrect_words(self, errors):
+        """Get all incorrect words aligned by annotation
+
+        Arguments:
+            errors {list} -- Error types
+
+        Returns:
+            list -- List of triples of aligned words for each error occurrence
+        """
+
         words = list()
-        
+
         for error in errors:
             line = error[0]
 
