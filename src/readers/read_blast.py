@@ -56,3 +56,21 @@ class BlastReader(object):
             words.append((src_words, ref_words, sys_words))
 
         return words
+
+    def get_correct_indices(self):
+        """Return all line indices which contain no error
+
+        Returns:
+            list -- List of numbers, which indicate with lines have
+                    no error referring to it
+        """
+
+        num_lines = len(self.src_lines)
+        error_indices = [l for (l, _) in self.error_lines]
+        correct_indices = list()
+
+        for i in range(num_lines):
+            if i not in error_indices:
+                correct_indices.append(i)
+
+        return correct_indices
