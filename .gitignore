@@ -10,3 +10,9 @@ resultados/
 FAPESP_NMT_*
 vectors-*.txt
 *.dix
+
+# Aligner
+*.zip
+Alinhador_de_Palavras/
+Alinhador_de_Sentencas/
+PorTAl-Aux/
