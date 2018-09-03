@@ -50,10 +50,14 @@ read data
 data=$(echo $data | sed 's/@-@/-/g') # Replace Moses format @-@ to -
 data=$(echo $data | sed 's/\(\w\)\s\$\s\([[:digit:]]\)/\1\2/g') # Change currency from format US $ 1 to US$1
 data=$(echo $data | sed 's/>/~/g') # Replace > to ~
+data=$(echo $data | sed 's/\//\&frasl;/g') # Replace / to &frasl;
+data=$(echo $data | sed 's/--/-/g') # Replace -- to -
 analysis_output=$(echo $data | lt-proc -a $SCRIPTPATH/apertium-$LANG/$LANG.automorf_retratos.bin)
 tagger_output=$(echo $analysis_output | apertium-tagger -g $SCRIPTPATH/apertium-$LANG/$LANG.prob)
 tagger_output=$(echo $tagger_output | sed 's/~/^>$/g') # Replace ~ back to > and add token delimiters
 tagger_output=$(echo $tagger_output | sed 's/\"/\^\"\$/g') # Add start and end of token to upper commas
 tagger_output=$(echo $tagger_output | sed 's/#\s/$ ^ /g') # Add start and end of token to # tokens
 tagger_output=$(echo $tagger_output | sed 's/\s-\s/ ^-$ /g') # Add start and end of token to - tokens
+tagger_output=$(echo $tagger_output | sed 's/&\^\*frasl\$\^;<sent>\$/\^\/\$/g') # Replace &frasl; back to / and add token delimiters
+tagger_output=$(echo $tagger_output | sed 's/\s&\s/ ^\&$ /g') # Add start and end of token to & tokens
 echo $tagger_output
