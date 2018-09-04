@@ -4,7 +4,10 @@ import re
 import os
 import random
 import string
+import pickle
+import progressbar
 import nltk.translate.ibm2 as align
+import numpy as np
 from readers.read_blast import BlastReader
 
 BLAST_PATH = '../FAPESP_MUSE_test-a.blast'
@@ -54,11 +57,10 @@ def run_apertium_tagger(lines, lang):
     application_path = str(os.path.abspath(os.path.curdir))
     out_lines = list()
 
-    for line in lines:
+    for line in progressbar.progressbar(lines):
         proc = subprocess.Popen([application_path + '/apertium/parse_file.sh', '--lang', lang],
                                 stdin=subprocess.PIPE, universal_newlines=True,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.DEVNULL)
+                                stdout=subprocess.PIPE)
         out = proc.communicate(' '.join(line))
         out_lines.append(out[0])
     return out_lines
@@ -152,7 +154,12 @@ def extract_features(tagged_sent, alignment, tw_size, target):
     # Features sys
     features['sysSize'] = len(tagged_sys)
 
-    for (i, tok) in enumerate(sys_tw):
+    for i in range(tw_size):
+        try:
+            tok = sys_tw[i]
+        except IndexError:
+            tok = list()
+        finally:
         # Gender
         key = ''
         if i < tw_size // 2:
@@ -177,7 +184,12 @@ def extract_features(tagged_sent, alignment, tw_size, target):
     features['sysBegCap'] = True if tagged_sys[lct_sys_index][0][0].isupper() else False
 
     # Features sys and src
-    for (i, tok) in enumerate(src_tw):
+    for i in range(tw_size):
+        try:
+            tok = src_tw[i]
+        except IndexError:
+            tok = list()
+        finally:
         key = ''
         tok_tags = re.sub(r'_\+[^_$]+_', '+', '_'.join(tok[1:]))
         if i < tw_size // 2:
@@ -188,7 +200,12 @@ def extract_features(tagged_sent, alignment, tw_size, target):
             key = 'posToken{}AftSrc'.format(i - (tw_size // 2))
         features[key] = tok_tags if tok_tags else 'NC'
 
-    for (i, tok) in enumerate(sys_tw):
+    for i in range(tw_size):
+        try:
+            tok = sys_tw[i]
+        except:
+            tok = list()
+        finally:
         key = ''
         tok_tags = re.sub(r'_\+[^_$]+_', '+', '_'.join(tok[1:]))
         if i < tw_size // 2:
@@ -256,6 +273,9 @@ def extract_features(tagged_sent, alignment, tw_size, target):
         lct_sys_index]
     features['specialCharSrcSys'] = special_char_src and special_char_sys
 
+    # Include target to the features dictionary
+    features['target'] = target
+
     return features
 
 
@@ -283,18 +303,27 @@ def main():
             target.append(error)
 
     # Tag sentences
+    print('Tagging sentences')
     tagged_lines = tag_sentences(src_lines, sys_lines)
 
     # Align sentences
+    print('Aligning sentences')
     for sent in tagged_lines:
         bitexts.append(align.AlignedSent(
             [w[0] for w in sent[0]], [w[0] for w in sent[1]]))
     align.IBMModel2(bitexts, 15)
 
-    for (i, sent) in enumerate(tagged_lines):
+    # Extract features
+    print('Extracting features')
+    training_instances = list()
+    for (i, sent) in progressbar.progressbar(enumerate(tagged_lines)):
         features = extract_features(
             sent, bitexts[i].alignment, TW_SZ, target[i])
-        print(features)
+        training_instances.append(features)
+
+    with open('features4.pkl', 'wb') as _file:
+        pickle.dump(training_instances, _file, pickle.HIGHEST_PROTOCOL)
+    print('Finalizado!')
 
 
 if __name__ == '__main__':
