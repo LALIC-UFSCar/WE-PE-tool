@@ -74,3 +74,15 @@ class BlastReader(object):
                 correct_indices.append(i)
 
         return correct_indices
+
+    def get_error_messages(self, line):
+        """Returns all errors associated to a given line index
+
+        Arguments:
+            line {int} -- Line number
+
+        Returns:
+            list -- All errors (indexes and error type) associated to the given line
+        """
+
+        return [error[1] for error in self.error_lines if line == error[0]]
