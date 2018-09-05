@@ -4,10 +4,13 @@ import sys
 import pandas as pd
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.preprocessing import LabelEncoder
+from sklearn import model_selection
+from sklearn.metrics import accuracy_score
 
 a = None
 
-with open('../../features4.pkl', 'rb') as _file:
+with open('/home/marcio/SHARED/SHARED/Lalic/post-editing/src/error_identification/features4.pkl', 'rb') as _file:
     a = pickle.load(_file)
 
 features = list(a[0].keys())
@@ -36,4 +39,20 @@ b.loc[b['target'] != 'correct', 'target'] = error_cols
 # Replace not correct targets with error
 b.loc[b['target'] != 'correct', 'target'] = 'error'
 
-print(b)
+# Encode target into numbers
+lb = LabelEncoder()
+b['target'] = lb.fit_transform(b['target'])
+
+# Get train instance values
+X = b.loc[:, b.columns != 'target']
+y = b['target']
+
+kf = model_selection.KFold(n_splits=10, shuffle=True)
+
+for (train, test) in kf.split(X):
+    # Training
+    dt = DecisionTreeClassifier()
+    dt.fit(X.loc[train], y.loc[train])
+
+    results = dt.predict(X.loc[test])
+    print('Precisao: {}'.format(accuracy_score(y.loc[test], results)))
