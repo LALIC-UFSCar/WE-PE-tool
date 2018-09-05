@@ -48,7 +48,7 @@ export LC_ALL="en_US.UTF-8"
 # Tag input
 read data
 data=$(echo $data | sed 's/@-@/-/g') # Replace Moses format @-@ to -
-data=$(echo $data | sed 's/\(\w\)\s\$\s\([[:digit:]]\)/\1\2/g') # Change currency from format US $ 1 to US$1
+data=$(echo $data | sed 's/\(\w\)\s\$\s\([[:digit:]]\)/\1 \&crf; \2/g') # Change currency from format US $ 1 to US &cfr; 1
 data=$(echo $data | sed 's/>/~/g') # Replace > to ~
 data=$(echo $data | sed 's/\//\&frasl;/g') # Replace / to &frasl;
 data=$(echo $data | sed 's/--/-/g') # Replace -- to -
@@ -59,5 +59,6 @@ tagger_output=$(echo $tagger_output | sed 's/\"/\^\"\$/g') # Add start and end o
 tagger_output=$(echo $tagger_output | sed 's/#\s/$ ^ /g') # Add start and end of token to # tokens
 tagger_output=$(echo $tagger_output | sed 's/\s-\s/ ^-$ /g') # Add start and end of token to - tokens
 tagger_output=$(echo $tagger_output | sed 's/&\^\*frasl\$\^;<sent>\$/\^\/\$/g') # Replace &frasl; back to / and add token delimiters
+tagger_output=$(echo $tagger_output | sed 's/&\^crf<sig>\$\^;<sent>\$/\^cfr\$/g') # Replace &crf; with crf and add token delimiters
 tagger_output=$(echo $tagger_output | sed 's/\s&\s/ ^\&$ /g') # Add start and end of token to & tokens
 echo $tagger_output
