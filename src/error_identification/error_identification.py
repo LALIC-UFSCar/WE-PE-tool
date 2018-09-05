@@ -160,24 +160,24 @@ def extract_features(tagged_sent, alignment, tw_size, target):
         except IndexError:
             tok = list()
         finally:
-        # Gender
-        key = ''
-        if i < tw_size // 2:
-            key = 'genToken{}BefSys'.format(i + 1)
-        elif i == tw_size // 2:
-            key = 'genSysToken'
-        else:
-            key = 'genToken{}AftSys'.format(i - (tw_size // 2))
-        features[key] = 'f' if 'f' in tok else 'm' if 'm' in tok else 'NC'
+            # Gender
+            key = ''
+            if i < tw_size // 2:
+                key = 'genToken{}BefSys'.format(i + 1)
+            elif i == tw_size // 2:
+                key = 'genSysToken'
+            else:
+                key = 'genToken{}AftSys'.format(i - (tw_size // 2))
+            features[key] = 'f' if 'f' in tok else 'm' if 'm' in tok else 'NC'
 
-        # Number
-        if i < tw_size // 2:
-            key = 'numToken{}BefSys'.format(i + 1)
-        elif i == tw_size // 2:
-            key = 'numSysToken'
-        else:
-            key = 'numToken{}AftSys'.format(i - (tw_size // 2))
-        features[key] = 'sg' if 'sg' in tok else 'pl' if 'pl' in tok else 'NC'
+            # Number
+            if i < tw_size // 2:
+                key = 'numToken{}BefSys'.format(i + 1)
+            elif i == tw_size // 2:
+                key = 'numSysToken'
+            else:
+                key = 'numToken{}AftSys'.format(i - (tw_size // 2))
+            features[key] = 'sg' if 'sg' in tok else 'pl' if 'pl' in tok else 'NC'
 
     features['SysTokenTag'] = True if len(
         tagged_sys[lct_sys_index]) > 1 else False
@@ -190,15 +190,15 @@ def extract_features(tagged_sent, alignment, tw_size, target):
         except IndexError:
             tok = list()
         finally:
-        key = ''
-        tok_tags = re.sub(r'_\+[^_$]+_', '+', '_'.join(tok[1:]))
-        if i < tw_size // 2:
-            key = 'posToken{}BefSrc'.format(i + 1)
-        elif i == tw_size // 2:
-            key = 'posSrcToken'
-        else:
-            key = 'posToken{}AftSrc'.format(i - (tw_size // 2))
-        features[key] = tok_tags if tok_tags else 'NC'
+            key = ''
+            tok_tags = re.sub(r'_\+[^_$]+_', '+', '_'.join(tok[1:]))
+            if i < tw_size // 2:
+                key = 'posToken{}BefSrc'.format(i + 1)
+            elif i == tw_size // 2:
+                key = 'posSrcToken'
+            else:
+                key = 'posToken{}AftSrc'.format(i - (tw_size // 2))
+            features[key] = tok_tags if tok_tags else 'NC'
 
     for i in range(tw_size):
         try:
@@ -206,15 +206,15 @@ def extract_features(tagged_sent, alignment, tw_size, target):
         except:
             tok = list()
         finally:
-        key = ''
-        tok_tags = re.sub(r'_\+[^_$]+_', '+', '_'.join(tok[1:]))
-        if i < tw_size // 2:
-            key = 'posToken{}BefSys'.format(i + 1)
-        elif i == tw_size // 2:
-            key = 'posSrcToken'
-        else:
-            key = 'posToken{}AftSys'.format(i - (tw_size // 2))
-        features[key] = tok_tags if tok_tags else 'NC'
+            key = ''
+            tok_tags = re.sub(r'_\+[^_$]+_', '+', '_'.join(tok[1:]))
+            if i < tw_size // 2:
+                key = 'posToken{}BefSys'.format(i + 1)
+            elif i == tw_size // 2:
+                key = 'posSrcToken'
+            else:
+                key = 'posToken{}AftSys'.format(i - (tw_size // 2))
+            features[key] = tok_tags if tok_tags else 'NC'
 
     try:
         if re.match('vb[^_]+', '_'.join(tagged_src[lct_src_index][1:])):
