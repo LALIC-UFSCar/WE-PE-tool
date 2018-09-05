@@ -8,9 +8,16 @@ import pickle
 import progressbar
 import nltk.translate.ibm2 as align
 import numpy as np
+import pandas as pd
 from readers.read_blast import BlastReader
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import KFold
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
 
-BLAST_PATH = '../FAPESP_MUSE_test-a.blast'
+BLAST_PATH = '/home/marciolima/Documentos/Lalic/post-editing/src/error_identification/error-ident-blast.txt'
+FEATURES_FILE = 'features_final.pkl'
 TW_SZ = 5
 ERRORS = ['lex-incTrWord', 'lex-notTrWord']
 
@@ -36,6 +43,11 @@ def tag_sentences(src, sys):
     for i in range(num_sents):
         src_tokens = re.findall(r'\^([^$]*)\$', src_out[i])
         sys_tokens = re.findall(r'\^([^$]*)\$', sys_out[i])
+
+        # Replace crf tokens with $
+        src_tokens = ['$' if w == 'cfr' else w for w in src_tokens]
+        sys_tokens = ['$' if w == 'cfr' else w for w in sys_tokens]
+
         src_tags.append([re.findall(r'([^<>]+|^>$)', token)
                          for token in src_tokens])
         sys_tags.append([re.findall(r'([^<>]+|^>$)', token)
@@ -279,6 +291,86 @@ def extract_features(tagged_sent, alignment, tw_size, target):
     return features
 
 
+def format_features(features):
+    features_names = list(features[0].keys())
+    features_names.remove('target')  # Ignore target for now
+
+    data = pd.DataFrame(features, columns=features_names)
+
+    # Get in DataFrame only numeric and boolean columns
+    # String columns are stored in string_cols
+    string_cols = data.select_dtypes(include='object')
+    data = data.select_dtypes(exclude='object')
+
+    # For each column with string features
+    # Split with '_' and code with get_dummies
+    # Then join to the main DataFrame
+    for col in string_cols:
+        nova_coluna = pd.get_dummies(string_cols[col].str.split('_').apply(
+            pd.Series).stack(), prefix=col, prefix_sep='_').sum(level=0)
+        data = data.join(nova_coluna)
+
+    # Add target column
+    data = data.join(pd.DataFrame(features, columns=['target']))
+
+    # Get only error label in the target column
+    error_cols = data.loc[data['target'] != 'correct', 'target']
+    error_cols = error_cols.apply(pd.Series)[3]
+    data.loc[data['target'] != 'correct', 'target'] = error_cols
+
+    # Replace not correct targets with error
+    data.loc[data['target'] != 'correct', 'target'] = 'error'
+
+    # Encode target into numbers
+    lb = LabelEncoder()
+    data['target'] = lb.fit_transform(data['target'])
+
+    return data
+
+
+def test_kfold_methods(data):
+    X = data.loc[:, data.columns != 'target']
+    y = data['target']
+
+    kf = KFold(n_splits=10, shuffle=True)
+
+    print('Arvore de decisao')
+    avg_precision = 0
+    fold = 1
+    for (train, test) in kf.split(X):
+        # Training
+        dt = DecisionTreeClassifier()
+        dt.fit(X.loc[train], y.loc[train])
+
+        results = dt.predict(X.loc[test])
+        precision = accuracy_score(y.loc[test], results)
+        avg_precision += precision
+
+        print('Precisao - Fold {}: {:.2f}%'.format(fold, precision * 100))
+        fold += 1
+
+    avg_precision /= 10
+    print('Precisao media: {:.2f}%'.format(avg_precision * 100))
+    print('------------------------------')
+
+    print('SVM')
+    avg_precision = 0
+    fold = 1
+    for (train, test) in kf.split(X):
+        svm = SVC()
+        svm.fit(X.loc[train], y.loc[train])
+
+        results = svm.predict(X.loc[test])
+        precision = accuracy_score(y.loc[test], results)
+        avg_precision += precision
+
+        print('Precisao - Fold {}: {:.2f}%'.format(fold, precision * 100))
+        fold += 1
+
+    avg_precision /= 10
+    print('Precisao media: {:.2f}%'.format(avg_precision * 100))
+
+
 def main():
     """Main function
     """
@@ -290,17 +382,15 @@ def main():
 
     # Correct sentences
     for i in blast_reader.get_correct_indices():
-        if i <= 300:
-            src_lines.append(blast_reader.src_lines[i])
-            sys_lines.append(blast_reader.sys_lines[i])
-            target.append('correct')
+        src_lines.append(blast_reader.src_lines[i])
+        sys_lines.append(blast_reader.sys_lines[i])
+        target.append('correct')
 
     # Error lines
     for (line, error) in blast_reader.get_filtered_errors(ERRORS):
-        if line <= 300:
-            src_lines.append(blast_reader.src_lines[line])
-            sys_lines.append(blast_reader.sys_lines[line])
-            target.append(error)
+        src_lines.append(blast_reader.src_lines[line])
+        sys_lines.append(blast_reader.sys_lines[line])
+        target.append(error)
 
     # Tag sentences
     print('Tagging sentences')
@@ -316,14 +406,20 @@ def main():
     # Extract features
     print('Extracting features')
     training_instances = list()
+    ignored_instances = 0
     for (i, sent) in progressbar.progressbar(enumerate(tagged_lines)):
         features = extract_features(
             sent, bitexts[i].alignment, TW_SZ, target[i])
-        training_instances.append(features)
-
-    with open('features4.pkl', 'wb') as _file:
-        pickle.dump(training_instances, _file, pickle.HIGHEST_PROTOCOL)
+        if features:
+            training_instances.append(features)
+        else:
+            ignored_instances += 1
     print('Finalizado!')
+    print('Instancias ignoradas: {}'.format(ignored_instances))
+
+    print('Iniciando treinamento')
+    data = format_features(training_instances)
+    test_kfold_methods(data)
 
 
 if __name__ == '__main__':
