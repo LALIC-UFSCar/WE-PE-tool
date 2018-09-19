@@ -1,6 +1,6 @@
 #!/bin/bash
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
-USAGE_MSG="Usage:\n--srcpath path \t Path to the source file\n--srclang [pt|en] \t --syspath path \t Path to the MT output file"
+USAGE_MSG="Usage:\n--srcpath path \t Path to the source file\n --syspath path \t Path to the MT output file"
 
 SRCPATH=""
 SYSPATH=""
@@ -57,21 +57,24 @@ align_words() {
     SRC_FILENAME=$(basename $1)
     SYS_FILENAME=$(basename $2)
 
-    perl Alinhador_de_Palavras/concatena_dicionario.pl $1 $2 Alinhador_de_Palavras/Dicionarios/dicionario_en-pt_v2_158037_freqmin_1.txt "/tmp/$SRC_FILENAME.concat" "/tmp/$SYS_FILENAME.concat"
+    perl $SCRIPTPATH/Alinhador_de_Palavras/concatena_dicionario.pl $1 $2 $SCRIPTPATH/Alinhador_de_Palavras/Dicionarios/dicionario_en-pt_v2_158037_freqmin_1.txt "/tmp/$SRC_FILENAME.concat" "/tmp/$SYS_FILENAME.concat"
 
     # Generate MGIZA input
-    $SCRIPTPATH/mgiza/mgizapp/bin/plain2snt "/tmp/$SRC_FILENAME.concat" "/tmp/$SYS_FILENAME.concat" -vcb1 "/tmp/$SRC_FILENAME.vcb" -vcb2 "/tmp/$SYS_FILENAME.vcb" -snt1 "/tmp/$SRC_FILENAME-$SYS_FILENAME.snt" -snt2 "/tmp/$SYS_FILENAME-$SRC_FILENAME.snt"
+    $SCRIPTPATH/mgiza/mgizapp/bin/plain2snt "/tmp/$SRC_FILENAME.concat" "/tmp/$SYS_FILENAME.concat" -vcb1 "/tmp/$SRC_FILENAME.vcb" -vcb2 "/tmp/$SYS_FILENAME.vcb" -snt1 "/tmp/$SRC_FILENAME-$SYS_FILENAME.snt" -snt2 "/tmp/$SYS_FILENAME-$SRC_FILENAME.snt" > /dev/null 2>&1
 
     # Generate CoocurrenceFile
-    $SCRIPTPATH/mgiza/mgizapp/bin/snt2cooc "/tmp/giza-cooc" "/tmp/$SRC_FILENAME.vcb" "/tmp/$SYS_FILENAME.vcb" "/tmp/$SYS_FILENAME-$SRC_FILENAME.snt"
+    $SCRIPTPATH/mgiza/mgizapp/bin/snt2cooc "/tmp/giza-cooc" "/tmp/$SRC_FILENAME.vcb" "/tmp/$SYS_FILENAME.vcb" "/tmp/$SYS_FILENAME-$SRC_FILENAME.snt" > /dev/null 2>&1
 
     cd /tmp/
     # Run MGIZA
-    $SCRIPTPATH/mgiza/mgizapp/bin/mgiza -S "/tmp/$SRC_FILENAME.vcb" -T "/tmp/$SYS_FILENAME.vcb" -C "/tmp/$SRC_FILENAME-$SYS_FILENAME.snt" -CoocurrenceFile "/tmp/giza-cooc"
+    $SCRIPTPATH/mgiza/mgizapp/bin/mgiza -S "/tmp/$SRC_FILENAME.vcb" -T "/tmp/$SYS_FILENAME.vcb" -C "/tmp/$SRC_FILENAME-$SYS_FILENAME.snt" -CoocurrenceFile "/tmp/giza-cooc" > /dev/null 2>&1
+
+    # Concatenate all files produced by MGIZA
     cat *.final.part* > giza.output
     rm *.final.*
     cd $SCRIPTPATH
-    head -n$(wc -l < $1) /tmp/giza.output > aligned_sentences.output
+
+    echo $(wc -l < $1)
 }
 
 align_words $SRCPATH $SYSPATH
