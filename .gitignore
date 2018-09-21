@@ -1,5 +1,6 @@
 # Python
 __pycache__/
+*.pkl
 
 # VSCode
 .env
@@ -10,9 +11,15 @@ resultados/
 FAPESP_NMT_*
 vectors-*.txt
 *.dix
+error-ident-*.txt
+*.output
+*.detok
 
 # Aligner
 *.zip
 Alinhador_de_Palavras/
 Alinhador_de_Sentencas/
 PorTAl-Aux/
+
+# BLAST
+*.blast
