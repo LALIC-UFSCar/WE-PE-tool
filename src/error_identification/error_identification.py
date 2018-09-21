@@ -16,6 +16,7 @@ from sklearn.model_selection import KFold
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from sklearn.linear_model import Perceptron
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
 BLAST_PATH = '/home/marciolima/Documentos/Lalic/post-editing/src/error_identification/error-ident-blast.txt'
@@ -23,6 +24,8 @@ BLAST_PATH = '/home/marciolima/Documentos/Lalic/post-editing/src/error_identific
 FEATURES_FILE = 'features_final.pkl'
 TW_SZ = 5
 ERRORS = ['lex-incTrWord', 'lex-notTrWord']
+
+lb = LabelEncoder()
 
 
 def tag_sentences(src, sys):
@@ -333,11 +336,10 @@ def format_features(features):
     data.loc[data['target'] != 'correct', 'target'] = error_cols
 
     # Replace not correct targets with error
-    # data.loc[data['target'] != 'correct', 'target'] = 'error'
-    data['target'] = data['target'].str.replace("-.*$", "")
+    data.loc[data['target'] != 'correct', 'target'] = 'error'
+    # data['target'] = data['target'].str.replace("-.*$", "")
 
     # Encode target into numbers
-    lb = LabelEncoder()
     data['target'] = lb.fit_transform(data['target'])
 
     return data
@@ -351,24 +353,45 @@ def test_kfold_methods(data):
 
     print('Arvore de decisao')
     avg_precision = 0
+    avg_precision_correct = 0
+    avg_precision_error = 0
     fold = 1
     for (train, test) in kf.split(X):
         # Training
         dt = DecisionTreeClassifier()
         dt.fit(X.loc[train], y.loc[train])
 
+        # print(X.loc[train].loc[y.loc[train] != 0])
+
         results = dt.predict(X.loc[test])
         precision = accuracy_score(y.loc[test], results)
         avg_precision += precision
 
+        precision_correct = accuracy_score(
+            y.loc[test].loc[y.loc[test] == 0], results[y.loc[test] == lb.transform(['correct'])[0]])
+        avg_precision_correct += precision_correct
+        precision_error = accuracy_score(
+            y.loc[test].loc[y.loc[test] != 0], results[y.loc[test] != lb.transform(['correct'])[0]])
+        avg_precision_error += precision_error
+
         print('Precisao - Fold {}: {:.2f}%'.format(fold, precision * 100))
+        print('Precisao corretas - Fold {}: {:.2f}%'.format(fold,
+                                                            precision_correct * 100))
+        print('Precisao erros - Fold {}: {:.2f}%\n'.format(fold, precision_error * 100))
         fold += 1
     avg_precision /= 10
+    avg_precision_correct /= 10
+    avg_precision_error /= 10
     print('Precisao media: {:.2f}%'.format(avg_precision * 100))
+    print('Precisao media corretas: {:.2f}%'.format(
+        avg_precision_correct * 100))
+    print('Precisao media erros: {:.2f}%'.format(avg_precision_error * 100))
     print('------------------------------')
 
     print('SVM')
     avg_precision = 0
+    avg_precision_correct = 0
+    avg_precision_error = 0
     fold = 1
     for (train, test) in kf.split(X):
         svm = SVC()
@@ -378,27 +401,93 @@ def test_kfold_methods(data):
         precision = accuracy_score(y.loc[test], results)
         avg_precision += precision
 
+        precision_correct = accuracy_score(
+            y.loc[test].loc[y.loc[test] == 0], results[y.loc[test] == lb.transform(['correct'])[0]])
+        avg_precision_correct += precision_correct
+        precision_error = accuracy_score(
+            y.loc[test].loc[y.loc[test] != 0], results[y.loc[test] != lb.transform(['correct'])[0]])
+        avg_precision_error += precision_error
+
         print('Precisao - Fold {}: {:.2f}%'.format(fold, precision * 100))
+        print('Precisao corretas - Fold {}: {:.2f}%'.format(fold,
+                                                            precision_correct * 100))
+        print('Precisao erros - Fold {}: {:.2f}%\n'.format(fold, precision_error * 100))
         fold += 1
     avg_precision /= 10
+    avg_precision_correct /= 10
+    avg_precision_error /= 10
     print('Precisao media: {:.2f}%'.format(avg_precision * 100))
+    print('Precisao media corretas: {:.2f}%'.format(
+        avg_precision_correct * 100))
+    print('Precisao media erros: {:.2f}%'.format(avg_precision_error * 100))
     print('------------------------------')
 
     print('Perceptron')
     avg_precision = 0
+    avg_precision_correct = 0
+    avg_precision_error = 0
     fold = 1
     for (train, test) in kf.split(X):
         perceptron = Perceptron()
         perceptron.fit(X.loc[train], y.loc[train])
 
-        results = svm.predict(X.loc[test])
+        results = perceptron.predict(X.loc[test])
         precision = accuracy_score(y.loc[test], results)
         avg_precision += precision
 
+        precision_correct = accuracy_score(
+            y.loc[test].loc[y.loc[test] == 0], results[y.loc[test] == lb.transform(['correct'])[0]])
+        avg_precision_correct += precision_correct
+        precision_error = accuracy_score(
+            y.loc[test].loc[y.loc[test] != 0], results[y.loc[test] != lb.transform(['correct'])[0]])
+        avg_precision_error += precision_error
+
         print('Precisao - Fold {}: {:.2f}%'.format(fold, precision * 100))
+        print('Precisao corretas - Fold {}: {:.2f}%'.format(fold,
+                                                            precision_correct * 100))
+        print('Precisao erros - Fold {}: {:.2f}%\n'.format(fold, precision_error * 100))
         fold += 1
     avg_precision /= 10
+    avg_precision_correct /= 10
+    avg_precision_error /= 10
     print('Precisao media: {:.2f}%'.format(avg_precision * 100))
+    print('Precisao media corretas: {:.2f}%'.format(
+        avg_precision_correct * 100))
+    print('Precisao media erros: {:.2f}%'.format(avg_precision_error * 100))
+    print('------------------------------')
+
+    print('Random Forest')
+    avg_precision = 0
+    avg_precision_correct = 0
+    avg_precision_error = 0
+    fold = 1
+    for (train, test) in kf.split(X):
+        random_forest = RandomForestClassifier()
+        random_forest.fit(X.loc[train], y.loc[train])
+
+        results = random_forest.predict(X.loc[test])
+        precision = accuracy_score(y.loc[test], results)
+        avg_precision += precision
+
+        precision_correct = accuracy_score(
+            y.loc[test].loc[y.loc[test] == 0], results[y.loc[test] == lb.transform(['correct'])[0]])
+        avg_precision_correct += precision_correct
+        precision_error = accuracy_score(
+            y.loc[test].loc[y.loc[test] != 0], results[y.loc[test] != lb.transform(['correct'])[0]])
+        avg_precision_error += precision_error
+
+        print('Precisao - Fold {}: {:.2f}%'.format(fold, precision * 100))
+        print('Precisao corretas - Fold {}: {:.2f}%'.format(fold,
+                                                            precision_correct * 100))
+        print('Precisao erros - Fold {}: {:.2f}%\n'.format(fold, precision_error * 100))
+        fold += 1
+    avg_precision /= 10
+    avg_precision_correct /= 10
+    avg_precision_error /= 10
+    print('Precisao media: {:.2f}%'.format(avg_precision * 100))
+    print('Precisao media corretas: {:.2f}%'.format(
+        avg_precision_correct * 100))
+    print('Precisao media erros: {:.2f}%'.format(avg_precision_error * 100))
 
 
 def main():
@@ -426,8 +515,8 @@ def main():
         sys_file.write('\n')
 
     # Error lines
-    # errors = blast_reader.get_filtered_errors(ERRORS)
-    errors = blast_reader.error_lines
+    errors = blast_reader.get_filtered_errors(ERRORS)
+    # errors = blast_reader.error_lines
     for (line, error) in errors:
         src_lines.append(blast_reader.src_lines[line])
         sys_lines.append(blast_reader.sys_lines[line])
@@ -471,10 +560,8 @@ def main():
     print('Instancias ignoradas: {}'.format(ignored_instances))
 
     print('Iniciando treinamento')
-    print(training_instances)
     data = format_features(training_instances)
-    print(data)
-    # test_kfold_methods(data)
+    test_kfold_methods(data)
 
 
 if __name__ == '__main__':
