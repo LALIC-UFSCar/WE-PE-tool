@@ -5,6 +5,7 @@ import tkinter.filedialog as fdialog
 from readers.read_ape import ApeReader
 from .ape_window import PostEditWindow
 from .blast_statistics_window import BLASTStatsWindow
+from .error_identification_window import ErrorIdentificationWindow
 
 
 class Application(object):
@@ -27,6 +28,8 @@ class Application(object):
         self.menubar = tk.Menu(self.master)
         self.apemenu = tk.Menu(self.menubar, tearoff=0)
         self.apemenu.add_command(label=_('Open'), command=self.load_ape_file)
+        self.apemenu.add_command(
+            label=_('Error identification'), command=lambda: ErrorIdentificationWindow(self))
         self.menubar.add_cascade(label=_('APE'), menu=self.apemenu)
 
         self.blastmenu = tk.Menu(self.menubar, tearoff=0)
