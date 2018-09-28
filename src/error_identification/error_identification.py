@@ -12,12 +12,13 @@ import pandas as pd
 from readers.read_blast import BlastReader
 from readers.read_giza import GIZAReader
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import KFold
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.model_selection import KFold, cross_validate
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from sklearn.linear_model import Perceptron
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, classification_report, recall_score, make_scorer
 
 BLAST_PATH = '/home/marciolima/Documentos/Lalic/post-editing/src/error_identification/error-ident-blast.txt'
 # BLAST_PATH = '/home/marciolima/Documentos/Lalic/post-editing/src/error_identification/exemplo.blast'
@@ -335,17 +336,15 @@ def format_features(features):
     error_cols = error_cols.apply(pd.Series)[3]
     data.loc[data['target'] != 'correct', 'target'] = error_cols
 
-    # Replace not correct targets with error
-    data.loc[data['target'] != 'correct', 'target'] = 'error'
-    # data['target'] = data['target'].str.replace("-.*$", "")
-
-    # Encode target into numbers
-    data['target'] = lb.fit_transform(data['target'])
-
     return data
 
 
-def test_kfold_methods(data):
+def test_correct_error(data):
+    # Replace not correct targets with error
+    data.loc[data['target'] != 'correct', 'target'] = 'error'
+    # Encode target into numbers
+    data['target'] = lb.fit_transform(data['target'])
+
     X = data.loc[:, data.columns != 'target']
     y = data['target']
 
@@ -360,8 +359,6 @@ def test_kfold_methods(data):
         # Training
         dt = DecisionTreeClassifier()
         dt.fit(X.loc[train], y.loc[train])
-
-        # print(X.loc[train].loc[y.loc[train] != 0])
 
         results = dt.predict(X.loc[test])
         precision = accuracy_score(y.loc[test], results)
@@ -490,6 +487,69 @@ def test_kfold_methods(data):
     print('Precisao media erros: {:.2f}%'.format(avg_precision_error * 100))
 
 
+def multiclass_recall(y, y_pred, **kwargs):
+    print(classification_report(y, y_pred))
+    return recall_score(y, y_pred, average='weighted')
+
+
+def test_multiclass_ova(data):
+    data['target'] = lb.fit_transform(data['target'])
+    print('Classes: {}'.format(list(lb.classes_)))
+
+    X = data.loc[:, data.columns != 'target']
+    y = data['target']
+
+    print('Arvore de decisao')
+    dt = OneVsRestClassifier(DecisionTreeClassifier())
+    scores = cross_validate(dt, X, y=y, cv=10, scoring={
+                            'acc': 'accuracy', 'rec': make_scorer(multiclass_recall), 'f1': 'f1_weighted'}, return_train_score=False)
+
+    print('Acurácia: {:.2f} (+/- {:.2f})'.format(
+        scores['test_acc'].mean(), scores['test_acc'].std()))
+    print('Cobertura: {:.2f} (+/- {:.2f})'.format(
+        scores['test_rec'].mean(), scores['test_rec'].std()))
+    print(
+        'F-score: {:.2f} (+/- {:.2f})'.format(scores['test_f1'].mean(), scores['test_f1'].std()))
+    print('------------------------------')
+
+    print('VSM')
+    dt = OneVsRestClassifier(SVC())
+    scores = cross_validate(dt, X, y=y, cv=10, scoring={
+                            'acc': 'accuracy', 'rec': make_scorer(multiclass_recall), 'f1': 'f1_weighted'}, return_train_score=False)
+
+    print('Acurácia: {:.2f} (+/- {:.2f})'.format(
+        scores['test_acc'].mean(), scores['test_acc'].std()))
+    print('Cobertura: {:.2f} (+/- {:.2f})'.format(
+        scores['test_rec'].mean(), scores['test_rec'].std()))
+    print(
+        'F-score: {:.2f} (+/- {:.2f})'.format(scores['test_f1'].mean(), scores['test_f1'].std()))
+    print('------------------------------')
+
+    print('Perceptron')
+    dt = OneVsRestClassifier(Perceptron())
+    scores = cross_validate(dt, X, y=y, cv=10, scoring={
+                            'acc': 'accuracy', 'rec': make_scorer(multiclass_recall), 'f1': 'f1_weighted'}, return_train_score=False)
+
+    print('Acurácia: {:.2f} (+/- {:.2f})'.format(
+        scores['test_acc'].mean(), scores['test_acc'].std()))
+    print('Cobertura: {:.2f} (+/- {:.2f})'.format(
+        scores['test_rec'].mean(), scores['test_rec'].std()))
+    print(
+        'F-score: {:.2f} (+/- {:.2f})'.format(scores['test_f1'].mean(), scores['test_f1'].std()))
+    print('------------------------------')
+
+    print('Random Forest')
+    dt = OneVsRestClassifier(RandomForestClassifier())
+    scores = cross_validate(dt, X, y=y, cv=10, scoring={
+                            'acc': 'accuracy', 'rec': make_scorer(multiclass_recall), 'f1': 'f1_weighted'}, return_train_score=False)
+
+    print('Acurácia: {:.2f} (+/- {:.2f})'.format(
+        scores['test_acc'].mean(), scores['test_acc'].std()))
+    print('Cobertura: {:.2f} (+/- {:.2f})'.format(
+        scores['test_rec'].mean(), scores['test_rec'].std()))
+    print('F-score: {:.2f} (+/- {:.2f})'.format(scores['test_f1'].mean(), scores['test_f1'].std()))
+
+
 def main():
     """Main function
     """
@@ -561,7 +621,8 @@ def main():
 
     print('Iniciando treinamento')
     data = format_features(training_instances)
-    test_kfold_methods(data)
+    # test_correct_error(data)
+    test_multiclass_ova(data)
 
 
 if __name__ == '__main__':
