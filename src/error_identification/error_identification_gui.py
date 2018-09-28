@@ -34,8 +34,8 @@ class ErrorIdentification(object):
             # Write files for GIZA
             src_file.write(' '.join(blast_reader.src_lines[i]))
             src_file.write('\n')
-            src_file.write(' '.join(blast_reader.sys_lines[i]))
-            src_file.write('\n')
+            sys_file.write(' '.join(blast_reader.sys_lines[i]))
+            sys_file.write('\n')
 
         # Error sentences
         errors = blast_reader.get_filtered_errors(
@@ -47,8 +47,8 @@ class ErrorIdentification(object):
 
             src_file.write(' '.join(blast_reader.src_lines[line]))
             src_file.write('\n')
-            src_file.write(' '.join(blast_reader.sys_lines[line]))
-            src_file.write('\n')
+            sys_file.write(' '.join(blast_reader.sys_lines[line]))
+            sys_file.write('\n')
         src_file.close()
         sys_file.close()
         os.close(src_fd)
@@ -128,7 +128,7 @@ class ErrorIdentification(object):
                                 stdout=subprocess.PIPE)
         out = proc.communicate()
         num_sents = int(out[0])
-        giza_reader = GIZAReader('tmp/giza.output')
+        giza_reader = GIZAReader('/tmp/giza.output')
         return giza_reader.aligned_lines[:num_sents]
 
     def extract_features(self, tagged_sent, alignment, tw_size, target):
