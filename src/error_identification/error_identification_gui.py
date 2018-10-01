@@ -22,6 +22,7 @@ class ErrorIdentification(object):
         self.model = None
         self.features = list()
         self.lb = LabelEncoder()
+        self.stop = False
 
     def train(self, blast_filename, model_type, error_types=None):
         blast_reader = BlastReader(blast_filename)
@@ -37,6 +38,8 @@ class ErrorIdentification(object):
 
         # Correct sentences
         for i in blast_reader.get_correct_indices():
+            if self.stop:
+                break
             src_lines.append(blast_reader.src_lines[i])
             sys_lines.append(blast_reader.sys_lines[i])
             target.append('correct')
@@ -51,6 +54,8 @@ class ErrorIdentification(object):
         errors = blast_reader.get_filtered_errors(
             error_types) if error_types else blast_reader.error_lines
         for (line, error) in errors:
+            if self.stop:
+                break
             src_lines.append(blast_reader.src_lines[line])
             sys_lines.append(blast_reader.sys_lines[line])
             target.append(error)
@@ -65,23 +70,29 @@ class ErrorIdentification(object):
         os.close(sys_fd)
 
         # Tag sentences
-        tagged_lines = self.tag_sentences(src_lines, sys_lines)
+        if not self.stop:
+            tagged_lines = self.tag_sentences(src_lines, sys_lines)
 
         # Align sentences
-        alignments = self.align_sentences(src_filename, sys_filename)
+        if not self.stop:
+            alignments = self.align_sentences(src_filename, sys_filename)
 
         # Extract features
         training_instances = list()
         for (i, sent) in enumerate(tagged_lines):
+            if self.stop:
+                break
             features = self.extract_features(
                 sent, alignments[i]['alignment'], self.TW_SZ, target[i])
             if features:
                 training_instances.append(features)
 
-        data = self.format_features(training_instances)
+        if not self.stop:
+            data = self.format_features(training_instances)
 
-        self.features = list(data)
-        self.model = self.train_model(data, model_type)
+        if not self.stop:
+            self.features = list(data)
+            self.model = self.train_model(data, model_type)
 
     def tag_sentences(self, src, sys):
         """Tags all sentences from src and sys
@@ -100,6 +111,8 @@ class ErrorIdentification(object):
         src_tags = list()
         sys_tags = list()
         for i in range(num_sents):
+            if self.stop:
+                break
             src_tokens = re.findall(r'\^([^$]*)\$', src_out[i])
             sys_tokens = re.findall(r'\^([^$]*)\$', sys_out[i])
 
@@ -128,6 +141,8 @@ class ErrorIdentification(object):
         out_lines = list()
 
         for line in lines:
+            if self.stop:
+                break
             proc = subprocess.Popen([apertium_script_path, '--lang', lang],
                                     stdin=subprocess.PIPE, universal_newlines=True,
                                     stdout=subprocess.PIPE)
@@ -401,7 +416,7 @@ class ErrorIdentification(object):
         data.loc[data['target'] != 'correct', 'target'] = error_cols
 
         return data
-    
+
     def train_model(self, data, model):
         data['target'] = self.lb.fit_transform(data['target'])
 
@@ -418,8 +433,8 @@ class ErrorIdentification(object):
             classifier = Perceptron()
         elif model == 'Random Forest':
             classifier = RandomForestClassifier()
-        
+
         if classifier:
             classifier.fit(X, y)
-        
+
         return classifier

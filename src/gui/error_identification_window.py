@@ -4,6 +4,7 @@ import tkinter.filedialog as fdialog
 import nltk.translate.ibm2 as align
 import queue
 import pickle
+import threading
 from readers.read_blast import BlastReader
 from error_identification.error_identification_gui import ErrorIdentification
 
@@ -102,12 +103,17 @@ class TrainModelWindow(object):
 
         # Done
         self.done_button = tk.Button(
-            self.train_model_widget, text=_('Done'), command=self.train_model)
+            self.train_model_widget, text=_('Done'), command=self.run_train_model)
         self.done_button.grid(row=3, column=0, columnspan=2, pady=10)
         self.cancel_button = tk.Button(
-            self.train_model_widget, text=_('Cancel'), command=print)
+            self.train_model_widget, text=_('Cancel'), command=self.cancel_train_model)
         self.cancel_button.grid(row=3, column=1, columnspan=3, pady=10)
 
+        # Progress bar
+        self.progress_bar = ttk.Progressbar(
+            self.train_model_window, mode='indeterminate')
+
+        self.error_ident = None
         self.filenames = dict()
 
     def get_filename_callback(self, event):
@@ -120,6 +126,14 @@ class TrainModelWindow(object):
                 self.blast_path_text.insert('end', filename.name)
                 self.blast_path_text.config(state=tk.DISABLED)
 
+    def run_train_model(self):
+        self.error_ident = ErrorIdentification()
+        train_thread = threading.Thread(target=self.train_model)
+        train_thread.start()
+        self.progress_bar.grid(row=4, column=0, columnspan=2, pady=10)
+        self.progress_bar.start(50)
+        self.progress_bar.after(5, self.update_progress_bar_callback)
+
     def train_model(self):
         try:
             assert self.filenames['blast']
@@ -127,8 +141,20 @@ class TrainModelWindow(object):
             tk.messagebox.showerror(_('Select files'), _(
                 'It is necessary to select all files.'))
         else:
-            error_ident = ErrorIdentification()
-            error_ident.train(
+            self.error_ident.train(
                 self.filenames['blast'], self.model_type.get())
             with open('model_' + self.model_type.get() + '.pkl', 'wb') as model_file:
-                pickle.dump(error_ident, model_file)
+                pickle.dump(self.error_ident, model_file)
+
+    def cancel_train_model(self):
+        if self.error_ident:
+            self.error_ident.stop = True
+
+    def update_progress_bar_callback(self):
+        if self.error_ident:
+            if not self.error_ident.stop:
+                self.progress_bar.update()
+                self.progress_bar.after(50, self.update_progress_bar_callback)
+            else:
+                self.progress_bar.stop()
+                self.progress_bar.grid_remove()
