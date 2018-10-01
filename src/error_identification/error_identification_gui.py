@@ -4,14 +4,24 @@ import subprocess
 import re
 import random
 import string
+import pandas as pd
 from readers.read_blast import BlastReader
 from readers.read_giza import GIZAReader
+from sklearn.preprocessing import LabelEncoder
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from sklearn.linear_model import Perceptron
+from sklearn.ensemble import RandomForestClassifier
 
 
 class ErrorIdentification(object):
 
     def __init__(self):
         self.TW_SZ = 5
+        self.model = None
+        self.features = list()
+        self.lb = LabelEncoder()
 
     def train(self, blast_filename, model_type, error_types=None):
         blast_reader = BlastReader(blast_filename)
@@ -67,6 +77,11 @@ class ErrorIdentification(object):
                 sent, alignments[i]['alignment'], self.TW_SZ, target[i])
             if features:
                 training_instances.append(features)
+
+        data = self.format_features(training_instances)
+
+        self.features = list(data)
+        self.model = self.train_model(data, model_type)
 
     def tag_sentences(self, src, sys):
         """Tags all sentences from src and sys
@@ -357,3 +372,54 @@ class ErrorIdentification(object):
         features['target'] = target
 
         return features
+
+    def format_features(self, features):
+        features_names = list(features[0].keys())
+        features_names.remove('target')  # Ignore target for now
+
+        data = pd.DataFrame(features, columns=features_names)
+
+        # Get in DataFrame only numeric and boolean columns
+        # String columns are stored in string_cols
+        string_cols = data.select_dtypes(include='object')
+        data = data.select_dtypes(exclude='object')
+
+        # For each column with string features
+        # Split with '_' and code with get_dummies
+        # Then join to the main DataFrame
+        for col in string_cols:
+            nova_coluna = pd.get_dummies(string_cols[col].str.split('_').apply(
+                pd.Series).stack(), prefix=col, prefix_sep='_').sum(level=0)
+            data = data.join(nova_coluna)
+
+        # Add target column
+        data = data.join(pd.DataFrame(features, columns=['target']))
+
+        # Get only error label in the target column
+        error_cols = data.loc[data['target'] != 'correct', 'target']
+        error_cols = error_cols.apply(pd.Series)[3]
+        data.loc[data['target'] != 'correct', 'target'] = error_cols
+
+        return data
+    
+    def train_model(self, data, model):
+        data['target'] = self.lb.fit_transform(data['target'])
+
+        X = data.loc[:, data.columns != 'target']
+        y = data['target']
+
+        classifier = None
+
+        if model == 'Decision Tree':
+            classifier = DecisionTreeClassifier()
+        elif model == 'SVM':
+            classifier = SVC()
+        elif model == 'Perceptron':
+            classifier = Perceptron()
+        elif model == 'Random Forest':
+            classifier = RandomForestClassifier()
+        
+        if classifier:
+            classifier.fit(X, y)
+        
+        return classifier

@@ -3,6 +3,7 @@ import tkinter.ttk as ttk
 import tkinter.filedialog as fdialog
 import nltk.translate.ibm2 as align
 import queue
+import pickle
 from readers.read_blast import BlastReader
 from error_identification.error_identification_gui import ErrorIdentification
 
@@ -126,5 +127,8 @@ class TrainModelWindow(object):
             tk.messagebox.showerror(_('Select files'), _(
                 'It is necessary to select all files.'))
         else:
-            ErrorIdentification().train(
+            error_ident = ErrorIdentification()
+            error_ident.train(
                 self.filenames['blast'], self.model_type.get())
+            with open('model_' + self.model_type.get() + '.pkl', 'wb') as model_file:
+                pickle.dump(error_ident, model_file)
