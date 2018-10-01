@@ -30,6 +30,18 @@ The WE@PE tool uses both `numpy` and `scipy` packages, as specified on the [requ
 pip3 install -r requirements.txt
 ```
 
+### Installing Apertium
+
+To perform the morphological analysis tasks required, the [Apertium](https://www.apertium.org) tool is used, as well as `lttoolbox`. To install these, just execute the following command:
+
+```bash
+apt-get install apertium lttoolbox
+```
+
+### Installing MGIZA
+
+The [MGIZA](https://github.com/moses-smt/mgiza) tool is used to align words from parallel corpora. This can be installed simply cloning the GitHub repository into `src/aligner/`.
+
 ## Running WE@PE
 
 To run the tool, simply execute `src/main.py` or `python3 src/main.py`.
@@ -41,3 +53,5 @@ This project was developed by Marcio Lima Inácio with orientation of Helena de 
 ## Acknowledgements
 
 This work has been developed with the support from [São Paulo Research Foundation (FAPESP)](http://www.fapesp.br/), grants #2016/21317-0 (Undergraduate research grant) and #2016/13002-0 (MMeaning Project).
+
+The opinions, hypotheses, conclusions and recommendations expressed in this material are the responsibility of the authors and do not necessarily reflect the views of FAPESP
