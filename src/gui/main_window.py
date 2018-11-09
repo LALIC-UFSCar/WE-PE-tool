@@ -3,9 +3,9 @@
 import tkinter as tk
 import tkinter.filedialog as fdialog
 from readers.read_ape import ApeReader
+import gui.error_identification_window as error_ident
 from .ape_window import PostEditWindow
 from .blast_statistics_window import BLASTStatsWindow
-from .error_identification_window import ErrorIdentificationWindow
 
 
 class Application(object):
@@ -28,8 +28,18 @@ class Application(object):
         self.menubar = tk.Menu(self.master)
         self.apemenu = tk.Menu(self.menubar, tearoff=0)
         self.apemenu.add_command(label=_('Open'), command=self.load_ape_file)
-        self.apemenu.add_command(
-            label=_('Error identification'), command=lambda: ErrorIdentificationWindow(self))
+
+        # Error Identification menu
+        self.error_ident_menu = tk.Menu(self.apemenu, tearoff=0)
+        self.error_ident_menu.add_command(
+            label=_('Train'), command=lambda: error_ident.TrainModelWindow(self))
+        self.error_ident_menu.add_command(
+            label=_('Test'), command=lambda: print)
+        self.error_ident_menu.add_command(
+            label=_('Run'), command=lambda: print)
+        self.apemenu.add_cascade(label=_('Error identification'),
+                                 menu=self.error_ident_menu)
+
         self.menubar.add_cascade(label=_('APE'), menu=self.apemenu)
 
         self.blastmenu = tk.Menu(self.menubar, tearoff=0)
@@ -149,11 +159,11 @@ class Application(object):
             self.src_text.config(state=tk.NORMAL)
             self.src_text.delete('1.0', tk.END)
             self.src_text.insert(
-                'end', self.ape_reader.src_lines[self.cur_line])
+                'end', ' '.join(self.ape_reader.src_lines[self.cur_line]))
             # Get aligned error words columns
             word_col = list()
             for i in self.ape_reader.error_lines[self.cur_line][0]:
-                if i > 0:
+                if i >= 0:
                     words = ' '.join(
                         self.ape_reader.src_lines[self.cur_line][:i])
                     col = len(words)
@@ -170,14 +180,15 @@ class Application(object):
             self.ref_text.config(state=tk.NORMAL)
             self.ref_text.delete('1.0', tk.END)
             self.ref_text.insert(
-                'end', self.ape_reader.ref_lines[self.cur_line])
+                'end', ' '.join(self.ape_reader.ref_lines[self.cur_line]))
             word_col = list()
             for i in self.ape_reader.error_lines[self.cur_line][2]:
-                words = ' '.join(self.ape_reader.ref_lines[self.cur_line][:i])
-                col = len(words)
-                if '"' in words:
-                    col = col + 2 * words.count('"')
-                word_col.append(col)
+                if i >= 0:
+                    words = ' '.join(self.ape_reader.ref_lines[self.cur_line][:i])
+                    col = len(words)
+                    if '"' in words:
+                        col = col + 2 * words.count('"')
+                    word_col.append(col)
             for col in word_col:
                 self.ref_text.tag_add('DESTAQUE', '1.{} wordstart'.format(
                     col + 1), '1.{} wordend'.format(col + 1))
@@ -187,14 +198,15 @@ class Application(object):
             self.sys_text.config(state=tk.NORMAL)
             self.sys_text.delete('1.0', tk.END)
             self.sys_text.insert(
-                'end', self.ape_reader.sys_lines[self.cur_line])
+                'end', ' '.join(self.ape_reader.sys_lines[self.cur_line]))
             word_col = list()
             for i in self.ape_reader.error_lines[self.cur_line][1]:
-                words = ' '.join(self.ape_reader.sys_lines[self.cur_line][:i])
-                col = len(words)
-                if '"' in words:
-                    col = col + 2 * words.count('"')
-                word_col.append(col)
+                if i >= 0:
+                    words = ' '.join(self.ape_reader.sys_lines[self.cur_line][:i])
+                    col = len(words)
+                    if '"' in words:
+                        col = col + 2 * words.count('"')
+                    word_col.append(col)
             for col in word_col:
                 self.sys_text.tag_add('DESTAQUE', '1.{} wordstart'.format(
                     col + 1), '1.{} wordend'.format(col + 1))
