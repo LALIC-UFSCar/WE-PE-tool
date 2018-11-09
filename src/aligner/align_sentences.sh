@@ -61,19 +61,21 @@ align_words() {
 
     # Generate MGIZA input
     $SCRIPTPATH/mgiza/mgizapp/bin/plain2snt "/tmp/$SRC_FILENAME.concat" "/tmp/$SYS_FILENAME.concat" -vcb1 "/tmp/$SRC_FILENAME.vcb" -vcb2 "/tmp/$SYS_FILENAME.vcb" -snt1 "/tmp/$SRC_FILENAME-$SYS_FILENAME.snt" -snt2 "/tmp/$SYS_FILENAME-$SRC_FILENAME.snt" > /dev/null 2>&1
+    $SCRIPTPATH/mgiza/mgizapp/bin/mkcls -p"/tmp/$SRC_FILENAME.concat" -V"/tmp/$SRC_FILENAME.classes" > /dev/null 2>&1
+    $SCRIPTPATH/mgiza/mgizapp/bin/mkcls -p"/tmp/$SYS_FILENAME.concat" -V"/tmp/$SYS_FILENAME.classes" > /dev/null 2>&1
 
     # Generate CoocurrenceFile
     $SCRIPTPATH/mgiza/mgizapp/bin/snt2cooc "/tmp/giza-cooc" "/tmp/$SRC_FILENAME.vcb" "/tmp/$SYS_FILENAME.vcb" "/tmp/$SYS_FILENAME-$SRC_FILENAME.snt" > /dev/null 2>&1
 
     cd /tmp/
     # Run MGIZA
-    $SCRIPTPATH/mgiza/mgizapp/bin/mgiza -S "/tmp/$SRC_FILENAME.vcb" -T "/tmp/$SYS_FILENAME.vcb" -C "/tmp/$SRC_FILENAME-$SYS_FILENAME.snt" -CoocurrenceFile "/tmp/giza-cooc" > /dev/null 2>&1
+    $SCRIPTPATH/mgiza/mgizapp/bin/mgiza -S "/tmp/$SRC_FILENAME.vcb" -T "/tmp/$SYS_FILENAME.vcb" -C "/tmp/$SRC_FILENAME-$SYS_FILENAME.snt" -CoocurrenceFile "/tmp/giza-cooc" -sourcevocabularyclasses "/tmp/$SRC_FILENAME.classes" -targetvocabularyclasses "/tmp/$SYS_FILENAME.classes" -o "src-sys" > /dev/null 2>&1
 
     # Concatenate all files produced by MGIZA
-    cat *.final.part* > giza.output
-    rm *.final.*
-    cd $SCRIPTPATH
+    cat src-sys.A3.final.part* > giza.output
+    rm src-sys.*.final.*
 
+    cd $SCRIPTPATH
     echo $(wc -l < $1)
 }
 
