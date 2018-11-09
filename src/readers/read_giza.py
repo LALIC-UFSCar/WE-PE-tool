@@ -13,17 +13,21 @@ class GIZAReader(object):
                 line_aligned = giza_file.readline()
 
                 line_num = int(re.findall(r'\(([^\)]*)\)', line_info)[0])
+
+                # Parse line with alignments into tuples (word, alignment)
                 line_aligned = re.findall(
                     r'([^\(]+) \(\{([^\}]*)\}\)', line_aligned)
+
+                # Alignment is represented as tuples of indices (src, sys)
                 alignment = list()
 
                 for (i, w) in enumerate(line_aligned):
-                    indices = map(int, w[1].split())
+                    indices = list(map(int, w[1].split()))
                     if not indices:
-                        alignment.append((i - 1, None))
+                        alignment.append((i-1, None))
                     else:
                         alignment.extend(
-                            [(None, j - 1) if w[0] == 'NULL' else (i - 1, j - 1) for j in indices])
+                            [(None, j-1) if w[0] == 'NULL' else (i-1, j-1) for j in indices])
 
                 self.aligned_lines.append({'num': line_num - 1,
                                            'sys': line_plain.split(),
