@@ -5,20 +5,20 @@ import re
 import random
 import string
 import pandas as pd
-from readers.read_blast import BlastReader
-from readers.read_giza import GIZAReader
 from sklearn.preprocessing import LabelEncoder
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.svm import SVC
+from sklearn.svm import LinearSVC
 from sklearn.linear_model import Perceptron
 from sklearn.ensemble import RandomForestClassifier
+from readers.read_blast import BlastReader
+from readers.read_giza import GIZAReader
 
 
 class ErrorIdentification(object):
 
     def __init__(self):
-        self.TW_SZ = 5
+        self.tw_size = 5
         self.model = None
         self.features = list()
         self.lb = LabelEncoder()
@@ -83,7 +83,7 @@ class ErrorIdentification(object):
             if self.stop:
                 break
             features = self.extract_features(
-                sent, alignments[i]['alignment'], self.TW_SZ, target[i])
+                sent, alignments[i]['alignment'], self.tw_size, target[i])
             if features:
                 training_instances.append(features)
 
@@ -107,7 +107,7 @@ class ErrorIdentification(object):
         src_out = self.run_apertium_tagger(src, 'en')
         sys_out = self.run_apertium_tagger(sys, 'pt')
 
-        num_sents = len(src_out)
+        num_sents = len(src_out)   
         src_tags = list()
         sys_tags = list()
         for i in range(num_sents):
@@ -428,7 +428,7 @@ class ErrorIdentification(object):
         if model == 'Decision Tree':
             classifier = DecisionTreeClassifier()
         elif model == 'SVM':
-            classifier = SVC()
+            classifier = LinearSVC()
         elif model == 'Perceptron':
             classifier = Perceptron()
         elif model == 'Random Forest':
