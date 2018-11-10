@@ -11,6 +11,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import Perceptron
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
 from readers.read_blast import BlastReader
 from readers.read_giza import GIZAReader
 
@@ -432,7 +433,9 @@ class ErrorIdentification(object):
         elif model == 'Perceptron':
             classifier = Perceptron()
         elif model == 'Random Forest':
-            classifier = RandomForestClassifier()
+            classifier = RandomForestClassifier(n_estimators=10)
+        elif model == 'Naive Bayes':
+            classifier = GaussianNB()
 
         if classifier:
             classifier.fit(X, y)

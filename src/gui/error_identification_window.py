@@ -6,7 +6,7 @@ import threading
 from error_identification.error_identification_gui import ErrorIdentification
 
 # Training models
-MODELS = ['Decision Tree', 'SVM', 'Perceptron', 'Random Forest']
+MODELS = ['Decision Tree', 'SVM', 'Perceptron', 'Random Forest', 'Naive Bayes']
 ERROR_TYPES = ['lex-notTrWord', 'lex-incTrWord']
 
 
