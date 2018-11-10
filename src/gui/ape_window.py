@@ -122,7 +122,7 @@ class PostEditWindow(object):
 
     def close_window_callback(self):
         '''
-        Treats closing window.
+        Handles closing window.
         Needs to wait for all threads to stop running.
         '''
         self.cancel_ape_callback()
