@@ -20,9 +20,11 @@ class ErrorIdentification(object):
 
     def __init__(self):
         self.tw_size = 5
-        self.model = None
+        self.model_step1 = None
+        self.model_step2 = None
         self.features = list()
-        self.lb = LabelEncoder()
+        self.lb_step1 = LabelEncoder()
+        self.lb_step2 = LabelEncoder()
         self.stop = False
 
     def train(self, blast_filename, model_type, error_types=None):
@@ -93,7 +95,8 @@ class ErrorIdentification(object):
 
         if not self.stop:
             self.features = list(data)
-            self.model = self.train_model(data, model_type)
+            self.model_step1 = self.train_model(data.copy(), model_type, step1=True)
+            self.model_step2 = self.train_model(data.copy(), model_type, step1=False)
 
     def tag_sentences(self, src, sys):
         """Tags all sentences from src and sys
@@ -418,11 +421,17 @@ class ErrorIdentification(object):
 
         return data
 
-    def train_model(self, data, model):
-        data['target'] = self.lb.fit_transform(data['target'])
-
+    def train_model(self, data, model, step1):
         X = data.loc[:, data.columns != 'target']
         y = data['target']
+
+        if step1:
+            y.loc[y != 'correct'] = 'error'
+            y = self.lb_step1.fit_transform(y)
+        else:
+            X = X[y != 'correct']
+            y = y.loc[y != 'correct']
+            y = self.lb_step2.fit_transform(y)
 
         classifier = None
 
