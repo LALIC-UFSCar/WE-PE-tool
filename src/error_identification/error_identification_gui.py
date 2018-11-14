@@ -85,8 +85,10 @@ class ErrorIdentification(object):
         for (i, sent) in enumerate(tagged_lines):
             if self.stop:
                 break
-            features = self.extract_features(
-                sent, alignments[i]['alignment'], self.tw_size, target[i])
+            features = self.extract_features(sent,
+                                             alignments[i]['alignment'],
+                                             self.tw_size,
+                                             target[i])
             if features:
                 training_instances.append(features)
 
@@ -95,8 +97,12 @@ class ErrorIdentification(object):
 
         if not self.stop:
             self.features = list(data)
-            self.model_step1 = self.train_model(data.copy(), model_type, step1=True)
-            self.model_step2 = self.train_model(data.copy(), model_type, step1=False)
+            self.model_step1 = self.train_model(data.copy(),
+                                                model_type,
+                                                step1=True)
+            self.model_step2 = self.train_model(data.copy(),
+                                                model_type,
+                                                step1=False)
 
     def tag_sentences(self, src, sys):
         """Tags all sentences from src and sys
@@ -111,7 +117,7 @@ class ErrorIdentification(object):
         src_out = self.run_apertium_tagger(src, 'en')
         sys_out = self.run_apertium_tagger(sys, 'pt')
 
-        num_sents = len(src_out)   
+        num_sents = len(src_out)
         src_tags = list()
         sys_tags = list()
         for i in range(num_sents):
@@ -188,9 +194,9 @@ class ErrorIdentification(object):
 
         # Apertium deals with MWE
         # Indices where one has MWE
-        has_mw_src = [(i, w[0].count(' '))
+        has_mw_src = [(i, len(re.findall(r'\w \w', w[0])))
                       for (i, w) in enumerate(tagged_src) if ' ' in w[0]]
-        has_mw_sys = [(i, w[0].count(' '))
+        has_mw_sys = [(i, len(re.findall(r'\w \w', w[0])))
                       for (i, w) in enumerate(tagged_sys) if ' ' in w[0]]
 
         # Get LCT
@@ -215,6 +221,12 @@ class ErrorIdentification(object):
                 lct_sys_index = lct_sys_index[0]
             else:
                 lct_sys_index = lct_sys_index[len(lct_sys_index) // 2]
+        elif target[0] == 'test':
+            lct_src_index = target[1][0]
+            lct_sys_index = target[1][1]
+
+            if lct_src_index is None or lct_sys_index is None:
+                return None
         else:
             lct_src_index = target[0]
             lct_sys_index = target[1]
@@ -411,13 +423,14 @@ class ErrorIdentification(object):
                 pd.Series).stack(), prefix=col, prefix_sep='_').sum(level=0)
             data = data.join(nova_coluna)
 
-        # Add target column
-        data = data.join(pd.DataFrame(features, columns=['target']))
+        if features[0]['target'][0] != 'test':
+            # Add target column
+            data = data.join(pd.DataFrame(features, columns=['target']))
 
-        # Get only error label in the target column
-        error_cols = data.loc[data['target'] != 'correct', 'target']
-        error_cols = error_cols.apply(pd.Series)[3]
-        data.loc[data['target'] != 'correct', 'target'] = error_cols
+            # Get only error label in the target column
+            error_cols = data.loc[data['target'] != 'correct', 'target']
+            error_cols = error_cols.apply(pd.Series)[3]
+            data.loc[data['target'] != 'correct', 'target'] = error_cols
 
         return data
 
@@ -450,3 +463,106 @@ class ErrorIdentification(object):
             classifier.fit(X, y)
 
         return classifier
+
+    def classify(self, src_filename, sys_filename):
+        assert self.model_step1
+        assert self.model_step2
+
+        self.stop = False
+        src_lines = list()
+        sys_lines = list()
+
+        with open(src_filename, 'r') as _file:
+            for line in _file:
+                src_lines.append(line.split())
+
+        with open(sys_filename, 'r') as _file:
+            for line in _file:
+                sys_lines.append(line.split())
+
+        if not self.stop:
+            tagged_lines = self.tag_sentences(src_lines, sys_lines)
+
+        if not self.stop:
+            alignments = self.align_sentences(src_filename, sys_filename)
+
+        return_blast = '#Sentencetypes src ref sys'
+        return_blast += '#catfile lalic-catsv2'
+
+        for (i, sent) in enumerate(tagged_lines):
+            error_info = ''
+            for sys_tw, src_tw in self.create_windows(sent[0], sent[1],
+                                                      alignments[i]['alignment']):
+                features = self.extract_features(sent,
+                                                 None, self.tw_size,
+                                                 ('test', (src_tw, sys_tw)))
+                if features:
+                    data = self.format_features([features])
+
+                    # Ignore features which were not used in training
+                    extra_features = set(data.columns) - set(self.features)
+                    data = data.drop(extra_features, axis=1)
+
+                    # Include features which were not generated in test
+                    leftout_features = set(self.features) - set(data.columns)
+                    for f in leftout_features:
+                        data[f] = 0
+
+                    # TODO: Reorder features as expected during training
+                    # data = data[[self.features]]
+
+                    X = data.loc[:, data.columns != 'target']
+                    prediction_step1 = self.model_step1.predict(X)
+                    prediction_step1 = self.lb_step1.inverse_transform(prediction_step1)[0]
+
+                    if prediction_step1 != 'correct':
+                        prediction_step2 = self.model_step2.predict(X)
+                        prediction_step2 = self.lb_step2.inverse_transform(prediction_step2)[0]
+
+                        error_info += str(src_tw) + '#' + str(sys_tw) + '#-1#'
+                        error_info += prediction_step2 + ' '
+            return_blast += ' '.join(src_lines[i])
+            return_blast += '\n'
+            return_blast += ' '.join(sys_lines[i])
+            return_blast += '\n'
+            return_blast += error_info
+        return return_blast
+
+    def create_windows(self, src_sent, sys_sent, alignment):
+        has_mw_src = [(i, len(re.findall(r'\S (?=\S)', w[0])))
+                      for (i, w) in enumerate(src_sent) if ' ' in w[0]]
+        has_mw_sys = [(i, len(re.findall(r'\S (?=\S)', w[0])))
+                      for (i, w) in enumerate(sys_sent) if ' ' in w[0]]
+        for sys_tw_index in range(len(src_sent)):
+
+            if has_mw_sys:
+                for (i, num_spaces) in has_mw_sys:
+                    sys_tw_index = sys_tw_index if sys_tw_index <= i else max(
+                        sys_tw_index - num_spaces, 0)
+
+            src_tw_index = self.get_tw_index_by_alignment(sys_tw_index,
+                                                          alignment,
+                                                          len(src_sent))
+
+            if has_mw_src and src_tw_index is not None:
+                for (i, num_spaces) in has_mw_src:
+                    src_tw_index = src_tw_index if src_tw_index <= i else max(
+                        src_tw_index - num_spaces, 0)
+            yield (sys_tw_index, src_tw_index)
+
+    def get_tw_index_by_alignment(self, sys_tw_index, alignment, sent_len):
+        src_tw_index = list()
+        i = 0
+        while (not src_tw_index or None in src_tw_index) and i < self.tw_size:
+            index = sys_tw_index + (pow(-1, i) * ((i + 1) // 2))
+            index = max(index, 0)
+            index = min(index, sent_len - 1)
+            src_tw_index = [a[0] for a in alignment if a[1] == index]
+            i += 1
+        if not src_tw_index:
+            return None
+        if len(src_tw_index) < 3:
+            src_tw_index = src_tw_index[0]
+        else:
+            src_tw_index = src_tw_index[len(src_tw_index) // 2]
+        return src_tw_index

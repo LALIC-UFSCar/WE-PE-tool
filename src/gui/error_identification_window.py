@@ -143,3 +143,124 @@ class TrainModelWindow(object):
             else:
                 self.progress_bar.stop()
                 self.progress_bar.grid_remove()
+
+class TestModelWindow(object):
+    def __init__(self, master):
+        self.test_model_window = tk.Toplevel(master.master)
+        self.test_model_window.title(_('Train Error Identification Model'))
+        self.test_model_widget = tk.Frame(self.test_model_window)
+        self.test_model_widget.grid(row=0, column=0, pady=10, padx=10)
+
+        # Src File selection
+        self.src_path_label = tk.Label(self.test_model_widget,
+                                       text=_('Source file'))
+        self.src_path_label.grid(row=0, column=0, sticky=tk.W)
+        self.src_path_text = tk.Text(self.test_model_widget, height=1)
+        self.src_path_text.config(state=tk.DISABLED)
+        self.src_path_text.grid(row=0, column=1, padx=10)
+        self.src_path_button = tk.Button(self.test_model_widget,
+                                         text=_('Select'))
+        self.src_path_button.bind('<Button-1>', self.get_filename_callback)
+        self.src_path_button.message = 'Src'
+        self.src_path_button.grid(row=0, column=2)
+
+        # Sys File selection
+        self.sys_path_label = tk.Label(self.test_model_widget,
+                                       text=_('Machine Translation file'))
+        self.sys_path_label.grid(row=1, column=0, sticky=tk.W)
+        self.sys_path_text = tk.Text(self.test_model_widget, height=1)
+        self.sys_path_text.config(state=tk.DISABLED)
+        self.sys_path_text.grid(row=1, column=1, padx=10)
+        self.sys_path_button = tk.Button(self.test_model_widget,
+                                         text=_('Select'))
+        self.sys_path_button.bind('<Button-1>', self.get_filename_callback)
+        self.sys_path_button.message = 'Sys'
+        self.sys_path_button.grid(row=1, column=2)
+
+        # Model selection
+        self.model_path_label = tk.Label(self.test_model_widget,
+                                         text=_('ML model file'))
+        self.model_path_label.grid(row=2, column=0, sticky=tk.W)
+        self.model_path_text = tk.Text(self.test_model_widget, height=1)
+        self.model_path_text.config(state=tk.DISABLED)
+        self.model_path_text.grid(row=2, column=1, padx=10)
+        self.model_path_button = tk.Button(self.test_model_widget,
+                                           text=_('Select'))
+        self.model_path_button.bind('<Button-1>', self.get_filename_callback)
+        self.model_path_button.message = 'Model'
+        self.model_path_button.grid(row=2, column=2)
+
+        # Done
+        self.done_button = tk.Button(
+            self.test_model_widget, text=_('Done'), command=print)
+        self.done_button.grid(row=3, column=0, columnspan=2, pady=10)
+
+        # Cancel
+        self.cancel_button = tk.Button(
+            self.test_model_widget, text=_('Cancel'), command=print)
+        self.cancel_button.grid(row=3, column=1, columnspan=3, pady=10)
+
+        # Progress bar
+        self.progress_bar = ttk.Progressbar(self.test_model_window,
+                                            mode='indeterminate')
+
+        self.error_ident = None
+        self.filenames = dict()
+        self.test_model_window.protocol('WM_DELETE_WINDOW',
+                                        self.close_window)
+
+    def get_filename_callback(self, event):
+        """Asks for a file and set `self.filenames`
+        """
+        filename = fdialog.askopenfile(title=_('Select a file'))
+        if filename:
+            if event.widget.message == 'Src':
+                self.filenames['src'] = filename.name
+                self.src_path_text.config(state=tk.NORMAL)
+                self.src_path_text.delete('1.0', tk.END)
+                self.src_path_text.insert('end', filename.name)
+                self.src_path_text.config(state=tk.DISABLED)
+            elif event.widget.message == 'Sys':
+                self.filenames['sys'] = filename.name
+                self.sys_path_text.config(state=tk.NORMAL)
+                self.sys_path_text.delete('1.0', tk.END)
+                self.sys_path_text.insert('end', filename.name)
+                self.sys_path_text.config(state=tk.DISABLED)
+            elif event.widget.message == 'Model':
+                self.filenames['model'] = filename.name
+                self.model_path_text.config(state=tk.NORMAL)
+                self.model_path_text.delete('1.0', tk.END)
+                self.model_path_text.insert('end', filename.name)
+                self.model_path_text.config(state=tk.DISABLED)
+
+    def cancel_train_model(self):
+        """Handles the canceling of a training.
+        If there is no training running, it closes the window.
+        """
+        if self.error_ident:
+            if self.error_ident.stop:
+                self.close_window()
+            else:
+                self.error_ident.stop = True
+        else:
+            self.close_window()
+
+    def close_window(self):
+        """Handles the window close.
+        If there is a traning running, it should be cancelled first.
+        """
+        if self.error_ident:
+            if not self.error_ident.stop:
+                self.cancel_train_model()
+        self.test_model_window.destroy()
+
+    def update_progress_bar_callback(self):
+        """Updates the progressbar each 50ms while the training is running.
+        """
+        if self.error_ident:
+            if not self.error_ident.stop:
+                self.progress_bar.update()
+                self.progress_bar.after(50, self.update_progress_bar_callback)
+            else:
+                self.progress_bar.stop()
+                self.progress_bar.grid_remove()
