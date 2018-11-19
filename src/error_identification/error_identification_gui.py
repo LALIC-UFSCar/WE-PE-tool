@@ -5,6 +5,8 @@ import re
 import random
 import string
 import pandas as pd
+import multiprocessing
+import threading
 from sklearn.preprocessing import LabelEncoder
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier
@@ -26,6 +28,7 @@ class ErrorIdentification(object):
         self.lb_step1 = LabelEncoder()
         self.lb_step2 = LabelEncoder()
         self.stop = False
+        self.result_classify = ''
 
     def train(self, blast_filename, model_type, error_types=None):
         blast_reader = BlastReader(blast_filename)
@@ -302,10 +305,8 @@ class ErrorIdentification(object):
                     key = 'numToken{}AftSys'.format(i - (tw_size // 2))
                 features[key] = 'sg' if 'sg' in tok else 'pl' if 'pl' in tok else 'NC'
 
-        features['SysTokenTag'] = True if len(
-            tagged_sys[lct_sys_index]) > 1 else False
-        features['sysBegCap'] = True if tagged_sys[lct_sys_index][0][0].isupper(
-        ) else False
+        features['SysTokenTag'] = True if len(tagged_sys[lct_sys_index]) > 1 else False
+        features['sysBegCap'] = True if tagged_sys[lct_sys_index][0][0].isupper() else False
 
         # Features sys and src
         for i in range(tw_size):
@@ -459,7 +460,7 @@ class ErrorIdentification(object):
         elif model == 'Naive Bayes':
             classifier = GaussianNB()
 
-        if classifier:
+        if classifier is not None:
             classifier.fit(X, y)
 
         return classifier
@@ -486,54 +487,23 @@ class ErrorIdentification(object):
         if not self.stop:
             alignments = self.align_sentences(src_filename, sys_filename)
 
-        return_blast = '#Sentencetypes src ref sys'
-        return_blast += '#catfile lalic-catsv2'
+        self.result_classify = '#Sentencetypes src ref sys'
+        self.result_classify += '#catfile lalic-catsv2'
 
-        for (i, sent) in enumerate(tagged_lines):
-            error_info = ''
-            for sys_tw, src_tw in self.create_windows(sent[0], sent[1],
-                                                      alignments[i]['alignment']):
-                features = self.extract_features(sent,
-                                                 None, self.tw_size,
-                                                 ('test', (src_tw, sys_tw)))
-                if features:
-                    data = self.format_features([features])
+        processing_list = list(zip(tagged_lines, alignments))
+        pool = multiprocessing.pool.Pool()
+        ret = pool.map(self.classify_chunk,
+                       processing_list,
+                       chunksize=len(processing_list)//len(os.sched_getaffinity(0)))
 
-                    # Ignore features which were not used in training
-                    extra_features = set(data.columns) - set(self.features)
-                    data = data.drop(extra_features, axis=1)
-
-                    # Include features which were not generated in test
-                    leftout_features = set(self.features) - set(data.columns)
-                    for f in leftout_features:
-                        data[f] = 0
-
-                    # TODO: Reorder features as expected during training
-                    # data = data[[self.features]]
-
-                    X = data.loc[:, data.columns != 'target']
-                    prediction_step1 = self.model_step1.predict(X)
-                    prediction_step1 = self.lb_step1.inverse_transform(prediction_step1)[0]
-
-                    if prediction_step1 != 'correct':
-                        prediction_step2 = self.model_step2.predict(X)
-                        prediction_step2 = self.lb_step2.inverse_transform(prediction_step2)[0]
-
-                        error_info += str(src_tw) + '#' + str(sys_tw) + '#-1#'
-                        error_info += prediction_step2 + ' '
-            return_blast += ' '.join(src_lines[i])
-            return_blast += '\n'
-            return_blast += ' '.join(sys_lines[i])
-            return_blast += '\n'
-            return_blast += error_info
-        return return_blast
+        return self.result_classify
 
     def create_windows(self, src_sent, sys_sent, alignment):
         has_mw_src = [(i, len(re.findall(r'\S (?=\S)', w[0])))
                       for (i, w) in enumerate(src_sent) if ' ' in w[0]]
         has_mw_sys = [(i, len(re.findall(r'\S (?=\S)', w[0])))
                       for (i, w) in enumerate(sys_sent) if ' ' in w[0]]
-        for sys_tw_index in range(len(src_sent)):
+        for sys_tw_index in range(len(sys_sent)):
 
             if has_mw_sys:
                 for (i, num_spaces) in has_mw_sys:
@@ -566,3 +536,54 @@ class ErrorIdentification(object):
         else:
             src_tw_index = src_tw_index[len(src_tw_index) // 2]
         return src_tw_index
+
+    def get_chunks(self, tagged_lines, alignments):
+        chunks = list()
+        n = len(os.sched_getaffinity(0))
+        for i in range(0, len(tagged_lines), n):
+            chunks.append((tagged_lines[i:i+n], alignments[i:i+n]))
+        return chunks
+
+    def classify_chunk(self, chunk):
+        tagged_lines, alignments = chunk
+        return_blast = ''
+        for (i, sent) in enumerate(tagged_lines):
+            error_info = ''
+            for sys_tw, src_tw in self.create_windows(sent[0], sent[1],
+                                                      alignments[i]['alignment']):
+                features = self.extract_features(sent,
+                                                 None, self.tw_size,
+                                                 ('test', (src_tw, sys_tw)))
+                if features:
+                    data = self.format_features([features])
+
+                    # Ignore features which were not used in training
+                    extra_features = set(data.columns) - set(self.features)
+                    data = data.drop(extra_features, axis=1)
+
+                    # Include features which were not generated in test
+                    leftout_features = set(self.features) - set(data.columns)
+                    for f in leftout_features:
+                        data[f] = 0
+
+                    data = data[self.features]
+
+                    X = data.loc[:, data.columns != 'target']
+                    prediction_step1 = self.model_step1.predict(X)
+                    prediction_step1 = self.lb_step1.inverse_transform(prediction_step1)[0]
+
+                    if prediction_step1 != 'correct':
+                        prediction_step2 = self.model_step2.predict(X)
+                        prediction_step2 = self.lb_step2.inverse_transform(prediction_step2)[0]
+
+                        error_info += str(src_tw) + '#' + str(sys_tw) + '#-1#'
+                        error_info += prediction_step2 + ' '
+            return_blast += ' '.join(alignments[i]['src'])
+            return_blast += '\n\n'
+            return_blast += ' '.join(alignments[i]['sys'])
+            return_blast += '\n'
+            return_blast += error_info
+        return return_blast
+
+    def log_classify_results(self, result):
+        self.result_classify += result
