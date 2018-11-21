@@ -39,7 +39,7 @@ class TrainModelWindow(object):
         self.model_type = tk.StringVar(self.train_model_widget)
         self.model_type.set(MODELS[0])
         self.model_label = tk.Label(
-            self.train_model_widget, text=_('Error type'))
+            self.train_model_widget, text=_('Model type'))
         self.model_label.grid(row=2, column=0, pady=10)
         self.model_menu = tk.OptionMenu(
             self.train_model_widget, self.model_type, *MODELS)
