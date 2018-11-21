@@ -458,7 +458,7 @@ class ErrorIdentification(object):
         elif model == 'Naive Bayes':
             classifier = GaussianNB()
 
-        if classifier:
+        if classifier is not None:
             classifier.fit(X, y)
 
         return classifier
