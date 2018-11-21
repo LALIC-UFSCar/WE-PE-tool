@@ -27,9 +27,7 @@ class PostEditor(threading.Thread):
             [self.window.error_type.get()])
 
         save_file_content = ''
-        save_file_content += '@annotations\n'
-        save_file_content += str(self.window.app.cur_line)
-        save_file_content += '\n'
+        save_file_content += '@annotations\n-1\n'
         error_num = 0
 
         num_threads = cpu_count() - 1

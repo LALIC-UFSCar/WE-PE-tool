@@ -156,8 +156,8 @@ class Application(object):
             # Update source text
             self.src_text.config(state=tk.NORMAL)
             self.src_text.delete('1.0', tk.END)
-            self.src_text.insert(
-                'end', ' '.join(self.ape_reader.src_lines[self.cur_line]))
+            self.src_text.insert('end',
+                                 ' '.join(self.ape_reader.src_lines[self.cur_line]))
             # Get aligned error words columns
             word_col = list()
             for i in self.ape_reader.error_lines[self.cur_line][0]:
