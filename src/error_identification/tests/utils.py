@@ -310,7 +310,8 @@ def format_features(features):
 
     # Get only error label in the target column
     error_cols = data.loc[data['target'] != 'correct', 'target']
-    error_cols = error_cols.apply(pd.Series)[3]
-    data.loc[data['target'] != 'correct', 'target'] = error_cols
+    if not error_cols.empty:
+        error_cols = error_cols.apply(pd.Series)[3]
+        data.loc[data['target'] != 'correct', 'target'] = error_cols
 
     return data
