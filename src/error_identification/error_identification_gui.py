@@ -489,9 +489,14 @@ class ErrorIdentification(object):
         return_blast += '#catfile lalic-catsv2'
 
         for (i, sent) in enumerate(tagged_lines):
+            if self.stop:
+                break
+
             error_info = ''
             for sys_tw, src_tw in self.create_windows(sent[0], sent[1],
                                                       alignments[i]['alignment']):
+                if self.stop:
+                    break
                 features = self.extract_features(sent,
                                                  None, self.tw_size,
                                                  ('test', (src_tw, sys_tw)))
