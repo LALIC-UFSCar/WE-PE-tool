@@ -12,7 +12,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import Perceptron
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import BernoulliNB
 from sklearn.metrics import accuracy_score, classification_report, recall_score, make_scorer
 
 # BLAST_PATH = '/home/marciolima/Documentos/Lalic/post-editing/src/error_identification/error-ident-blast.txt'
@@ -35,7 +35,7 @@ def test_correct_error(data):
 
     kf = KFold(n_splits=10, shuffle=True)
 
-    print('Arvore de decisao')
+    print('Arvore de decisao - GINI')
     avg_precision = 0
     avg_precision_correct = 0
     avg_precision_error = 0
@@ -70,13 +70,82 @@ def test_correct_error(data):
     print('Precisao media erros: {:.2f}%'.format(avg_precision_error * 100))
     print('------------------------------')
 
-    print('SVM')
+    print('Arvore de decisao - Entropy')
+    avg_precision = 0
+    avg_precision_correct = 0
+    avg_precision_error = 0
+    fold = 1
+    for (train, test) in kf.split(X):
+        # Training
+        dt = DecisionTreeClassifier(criterion='entropy')
+        dt.fit(X.loc[train], y.loc[train])
+
+        results = dt.predict(X.loc[test])
+        precision = accuracy_score(y.loc[test], results)
+        avg_precision += precision
+
+        precision_correct = accuracy_score(
+            y.loc[test].loc[y.loc[test] == 0], results[y.loc[test] == lb.transform(['correct'])[0]])
+        avg_precision_correct += precision_correct
+        precision_error = accuracy_score(
+            y.loc[test].loc[y.loc[test] != 0], results[y.loc[test] != lb.transform(['correct'])[0]])
+        avg_precision_error += precision_error
+
+        print('Precisao - Fold {}: {:.2f}%'.format(fold, precision * 100))
+        print('Precisao corretas - Fold {}: {:.2f}%'.format(fold,
+                                                            precision_correct * 100))
+        print('Precisao erros - Fold {}: {:.2f}%\n'.format(fold, precision_error * 100))
+        fold += 1
+    avg_precision /= 10
+    avg_precision_correct /= 10
+    avg_precision_error /= 10
+    print('Precisao media: {:.2f}%'.format(avg_precision * 100))
+    print('Precisao media corretas: {:.2f}%'.format(
+        avg_precision_correct * 100))
+    print('Precisao media erros: {:.2f}%'.format(avg_precision_error * 100))
+    print('------------------------------')
+
+    print('SVM - Um contra todos')
     avg_precision = 0
     avg_precision_correct = 0
     avg_precision_error = 0
     fold = 1
     for (train, test) in kf.split(X):
         svm = LinearSVC()
+        svm.fit(X.loc[train], y.loc[train])
+
+        results = svm.predict(X.loc[test])
+        precision = accuracy_score(y.loc[test], results)
+        avg_precision += precision
+
+        precision_correct = accuracy_score(
+            y.loc[test].loc[y.loc[test] == 0], results[y.loc[test] == lb.transform(['correct'])[0]])
+        avg_precision_correct += precision_correct
+        precision_error = accuracy_score(
+            y.loc[test].loc[y.loc[test] != 0], results[y.loc[test] != lb.transform(['correct'])[0]])
+        avg_precision_error += precision_error
+
+        print('Precisao - Fold {}: {:.2f}%'.format(fold, precision * 100))
+        print('Precisao corretas - Fold {}: {:.2f}%'.format(fold,
+                                                            precision_correct * 100))
+        print('Precisao erros - Fold {}: {:.2f}%\n'.format(fold, precision_error * 100))
+        fold += 1
+    avg_precision /= 10
+    avg_precision_correct /= 10
+    avg_precision_error /= 10
+    print('Precisao media: {:.2f}%'.format(avg_precision * 100))
+    print('Precisao media corretas: {:.2f}%'.format(
+        avg_precision_correct * 100))
+    print('Precisao media erros: {:.2f}%'.format(avg_precision_error * 100))
+    print('------------------------------')
+
+    print('SVM - Crammer-Singer')
+    avg_precision = 0
+    avg_precision_correct = 0
+    avg_precision_error = 0
+    fold = 1
+    for (train, test) in kf.split(X):
+        svm = LinearSVC(multi_class='crammer_singer')
         svm.fit(X.loc[train], y.loc[train])
 
         results = svm.predict(X.loc[test])
@@ -138,7 +207,7 @@ def test_correct_error(data):
     print('Precisao media erros: {:.2f}%'.format(avg_precision_error * 100))
     print('------------------------------')
 
-    print('Random Forest')
+    print('Random Forest - GINI')
     avg_precision = 0
     avg_precision_correct = 0
     avg_precision_error = 0
@@ -172,13 +241,47 @@ def test_correct_error(data):
     print('Precisao media erros: {:.2f}%'.format(avg_precision_error * 100))
     print('------------------------------')
 
+    print('Random Forest - Entropy')
+    avg_precision = 0
+    avg_precision_correct = 0
+    avg_precision_error = 0
+    fold = 1
+    for (train, test) in kf.split(X):
+        random_forest = RandomForestClassifier(criterion='entropy')
+        random_forest.fit(X.loc[train], y.loc[train])
+
+        results = random_forest.predict(X.loc[test])
+        precision = accuracy_score(y.loc[test], results)
+        avg_precision += precision
+
+        precision_correct = accuracy_score(
+            y.loc[test].loc[y.loc[test] == 0], results[y.loc[test] == lb.transform(['correct'])[0]])
+        avg_precision_correct += precision_correct
+        precision_error = accuracy_score(
+            y.loc[test].loc[y.loc[test] != 0], results[y.loc[test] != lb.transform(['correct'])[0]])
+        avg_precision_error += precision_error
+
+        print('Precisao - Fold {}: {:.2f}%'.format(fold, precision * 100))
+        print('Precisao corretas - Fold {}: {:.2f}%'.format(fold,
+                                                            precision_correct * 100))
+        print('Precisao erros - Fold {}: {:.2f}%\n'.format(fold, precision_error * 100))
+        fold += 1
+    avg_precision /= 10
+    avg_precision_correct /= 10
+    avg_precision_error /= 10
+    print('Precisao media: {:.2f}%'.format(avg_precision * 100))
+    print('Precisao media corretas: {:.2f}%'.format(
+        avg_precision_correct * 100))
+    print('Precisao media erros: {:.2f}%'.format(avg_precision_error * 100))
+    print('------------------------------')
+
     print('Naive Bayes')
     avg_precision = 0
     avg_precision_correct = 0
     avg_precision_error = 0
     fold = 1
     for (train, test) in kf.split(X):
-        naive_bayes = GaussianNB()
+        naive_bayes = BernoulliNB()
         naive_bayes.fit(X.loc[train], y.loc[train])
 
         results = naive_bayes.predict(X.loc[test])

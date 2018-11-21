@@ -9,7 +9,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import Perceptron
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import BernoulliNB
 from sklearn.metrics import classification_report, recall_score, make_scorer
 from readers.read_blast import BlastReader
 from readers.read_giza import GIZAReader
@@ -37,7 +37,7 @@ def test_multiclass(data):
     X = data.loc[:, data.columns != 'target']
     y = data['target']
 
-    print('Arvore de decisao')
+    print('Arvore de decisao - GINI')
     dt = DecisionTreeClassifier()
     scores = cross_validate(dt, X, y=y, cv=10, scoring={
                             'acc': 'accuracy', 'rec': make_scorer(multiclass_recall), 'f1': 'f1_weighted'}, return_train_score=False)
@@ -50,8 +50,34 @@ def test_multiclass(data):
         'F-score: {:.2f} (+/- {:.2f})'.format(scores['test_f1'].mean(), scores['test_f1'].std()))
     print('------------------------------')
 
-    print('VSM')
+    print('Arvore de decisao - Entropy')
+    dt = DecisionTreeClassifier(criterion='entropy')
+    scores = cross_validate(dt, X, y=y, cv=10, scoring={
+                            'acc': 'accuracy', 'rec': make_scorer(multiclass_recall), 'f1': 'f1_weighted'}, return_train_score=False)
+
+    print('Acurácia: {:.2f} (+/- {:.2f})'.format(
+        scores['test_acc'].mean(), scores['test_acc'].std()))
+    print('Cobertura: {:.2f} (+/- {:.2f})'.format(
+        scores['test_rec'].mean(), scores['test_rec'].std()))
+    print(
+        'F-score: {:.2f} (+/- {:.2f})'.format(scores['test_f1'].mean(), scores['test_f1'].std()))
+    print('------------------------------')
+
+    print('SVM - Um contra todos')
     dt = LinearSVC()
+    scores = cross_validate(dt, X, y=y, cv=10, scoring={
+                            'acc': 'accuracy', 'rec': make_scorer(multiclass_recall), 'f1': 'f1_weighted'}, return_train_score=False)
+
+    print('Acurácia: {:.2f} (+/- {:.2f})'.format(
+        scores['test_acc'].mean(), scores['test_acc'].std()))
+    print('Cobertura: {:.2f} (+/- {:.2f})'.format(
+        scores['test_rec'].mean(), scores['test_rec'].std()))
+    print(
+        'F-score: {:.2f} (+/- {:.2f})'.format(scores['test_f1'].mean(), scores['test_f1'].std()))
+    print('------------------------------')
+
+    print('SVM - Crammer-Singer')
+    dt = LinearSVC(multi_class='crammer_singer')
     scores = cross_validate(dt, X, y=y, cv=10, scoring={
                             'acc': 'accuracy', 'rec': make_scorer(multiclass_recall), 'f1': 'f1_weighted'}, return_train_score=False)
 
@@ -76,7 +102,7 @@ def test_multiclass(data):
         'F-score: {:.2f} (+/- {:.2f})'.format(scores['test_f1'].mean(), scores['test_f1'].std()))
     print('------------------------------')
 
-    print('Random Forest')
+    print('Random Forest - GINI')
     dt = RandomForestClassifier()
     scores = cross_validate(dt, X, y=y, cv=10, scoring={
                             'acc': 'accuracy', 'rec': make_scorer(multiclass_recall), 'f1': 'f1_weighted'}, return_train_score=False)
@@ -89,8 +115,21 @@ def test_multiclass(data):
         'F-score: {:.2f} (+/- {:.2f})'.format(scores['test_f1'].mean(), scores['test_f1'].std()))
     print('------------------------------')
 
+    print('Random Forest - Entropy')
+    dt = RandomForestClassifier(criterion='entropy')
+    scores = cross_validate(dt, X, y=y, cv=10, scoring={
+                            'acc': 'accuracy', 'rec': make_scorer(multiclass_recall), 'f1': 'f1_weighted'}, return_train_score=False)
+
+    print('Acurácia: {:.2f} (+/- {:.2f})'.format(
+        scores['test_acc'].mean(), scores['test_acc'].std()))
+    print('Cobertura: {:.2f} (+/- {:.2f})'.format(
+        scores['test_rec'].mean(), scores['test_rec'].std()))
+    print(
+        'F-score: {:.2f} (+/- {:.2f})'.format(scores['test_f1'].mean(), scores['test_f1'].std()))
+    print('------------------------------')
+
     print('Naive Bayes')
-    dt = GaussianNB()
+    dt = BernoulliNB()
     scores = cross_validate(dt, X, y=y, cv=10, scoring={
                             'acc': 'accuracy', 'rec': make_scorer(multiclass_recall), 'f1': 'f1_weighted'}, return_train_score=False)
 
