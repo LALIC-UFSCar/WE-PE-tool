@@ -53,6 +53,8 @@ data=$(echo $data | sed 's/\//\&frasl;/g') # Replace / to &frasl;
 data=$(echo $data | sed 's/--/-/g') # Replace -- to -
 data=$(echo $data | sed 's/–/-/g') # Replace dash (–) to -
 data=$(echo $data | sed 's/“/"/g') # Replace Left Double Quotation Mark (“) to "
+data=$(echo $data | sed "s/´/'/g") # Replace Diacritical Mark (´) to '
+data=$(echo $data | sed 's/``/"/g') # Replace (``) with "
 data=$(echo $data | apertium-destxt | sed 's/.\(\[\]\[\)$/\1/g') # Preprocess with apertium, but remove extra period
 analysis_output=$(echo $data | lt-proc -a $SCRIPTPATH/apertium-$LANG/$LANG.automorf_retratos.bin)
 tagger_output=$(echo $analysis_output | apertium-tagger -g $SCRIPTPATH/apertium-$LANG/$LANG.prob)
@@ -72,7 +74,7 @@ tagger_output=$(echo $tagger_output | sed 's/\s&\s/ ^\&$ /g') # Add start and en
 tagger_output=$(echo $tagger_output | sed 's/+o seu\([^$]*\$\)/+o\1 ^seu\1/g') # Split "o seu" into two tokens
 tagger_output=$(echo $tagger_output | sed 's/+o qual\([^$]*\$\)/+o\1 ^qual\1/g') # Split "o qual" into two tokens
 tagger_output=$(echo $tagger_output | sed 's/+o nosso\([^$]*\$\)/+o\1 ^nosso\1/g') # Split "o nosso" into two tokens
-tagger_output=$(echo $tagger_output | sed 's/\(\^the[^$]*\)+\(most[^$]*\$\)/\1$ ^\2/g') # Split "the most" into two tokens
+tagger_output=$(echo $tagger_output | sed 's/\(\^[Tt]he[^$]*\)+\(most[^$]*\$\)/\1$ ^\2/g') # Split "the most" into two tokens
 tagger_output=$(echo $tagger_output | sed 's/\(\^go[^$]*\)+\(on[^$]*\$\)/\1$ ^\2/g') # Split "go on" into two tokens
 echo $tagger_output
 
