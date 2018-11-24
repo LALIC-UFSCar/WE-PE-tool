@@ -4,7 +4,7 @@ import tkinter as tk
 import tkinter.filedialog as fdialog
 from readers.read_ape import ApeReader
 import gui.error_identification_window as error_ident
-from .ape_window import PostEditWindow
+from .ape_window import PostEditWindow, CorrectSentencesWindow
 from .blast_statistics_window import BLASTStatsWindow
 
 
@@ -30,7 +30,8 @@ class Application(object):
         self.apemenu.add_command(label=_('Open'), command=self.load_ape_file)
         self.apemenu.add_command(label=_('Generate Suggestions'),
                                  command=lambda: PostEditWindow(self))
-        self.apemenu.add_command(label=_('Correct'), command=print)
+        self.apemenu.add_command(label=_('Correct Sentences'),
+                                 command=lambda: CorrectSentencesWindow(self))
 
         # Error Identification menu
         self.error_ident_menu = tk.Menu(self.apemenu, tearoff=0)
