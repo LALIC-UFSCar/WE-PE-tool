@@ -28,6 +28,9 @@ class Application(object):
         self.menubar = tk.Menu(self.master)
         self.apemenu = tk.Menu(self.menubar, tearoff=0)
         self.apemenu.add_command(label=_('Open'), command=self.load_ape_file)
+        self.apemenu.add_command(label=_('Generate Suggestions'),
+                                 command=lambda: PostEditWindow(self))
+        self.apemenu.add_command(label=_('Correct'), command=print)
 
         # Error Identification menu
         self.error_ident_menu = tk.Menu(self.apemenu, tearoff=0)
@@ -41,8 +44,6 @@ class Application(object):
         self.menubar.add_cascade(label=_('APE'), menu=self.apemenu)
 
         self.blastmenu = tk.Menu(self.menubar, tearoff=0)
-        self.blastmenu.add_command(
-            label=_('Open'), command=lambda: PostEditWindow(self))
         self.blastmenu.add_command(
             label=_('Statistics'), command=lambda: BLASTStatsWindow(self))
         self.menubar.add_cascade(label='BLAST', menu=self.blastmenu)

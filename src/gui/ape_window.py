@@ -73,11 +73,13 @@ class PostEditWindow(object):
         self.done_button = tk.Button(
             self.blast_widget, text=_('Done'), command=self.load_muse)
         self.done_button.grid(row=4, column=0, columnspan=2, pady=10)
-        self.cancel_button = tk.Button(
-            self.blast_widget, text=_('Cancel'), command=self.close_window_callback)
+        self.cancel_button = tk.Button(self.blast_widget,
+                                       text=_('Cancel'),
+                                       command=self.close_window_callback)
         self.cancel_button.grid(row=4, column=1, columnspan=3, pady=10)
-        self.cancel_ape_button = tk.Button(
-            self.blast_widget, text=_('Cancel'), command=self.cancel_ape_callback)
+        self.cancel_ape_button = tk.Button(self.blast_widget,
+                                           text=_('Cancel'),
+                                           command=self.cancel_ape_callback)
         self.stop = False
         self.should_close = False
 
@@ -91,8 +93,8 @@ class PostEditWindow(object):
         self.emb_en = dict()
         self.emb_pt = dict()
 
-        self.blast_window.protocol(
-            'WM_DELETE_WINDOW', self.close_window_callback)
+        self.blast_window.protocol('WM_DELETE_WINDOW',
+                                   self.close_window_callback)
 
     def get_filename_callback(self, event):
         '''
@@ -153,24 +155,26 @@ class PostEditWindow(object):
             assert en_path
             assert pt_path
         except AssertionError:
-            tk.messagebox.showerror(
-                _('Select files'), _('It is necessary to select all files.'))
+            tk.messagebox.showerror(_('Select files'),
+                                    _('It is necessary to select all files.'))
         else:
             try:
                 # Source embeddings thread
-                self.running_threads.append(MuseReader(
-                    self, en_path, self.muse_en_queue))
+                self.running_threads.append(MuseReader(self,
+                                                       en_path,
+                                                       self.muse_en_queue))
             except FileNotFoundError:
-                tk.messagebox.showerror(
-                    _('File not found'), _('MUSE file for English Embeddings not found.'))
+                tk.messagebox.showerror(_('File not found'),
+                                        _('MUSE file for English Embeddings not found.'))
             else:
                 try:
                     # Target embeddings thread
-                    self.running_threads.append(MuseReader(
-                        self, pt_path, self.muse_pt_queue))
+                    self.running_threads.append(MuseReader(self,
+                                                           pt_path,
+                                                           self.muse_pt_queue))
                 except FileNotFoundError:
-                    tk.messagebox.showerror(
-                        _('File not found'), _('MUSE file for Portuguese Embeddings not fund.'))
+                    tk.messagebox.showerror(_('File not found'),
+                                            _('MUSE file for Portuguese Embeddings not found.'))
                 else:
                     self.blast_window.after(100, self.load_muse_callback)
 
@@ -216,8 +220,9 @@ class PostEditWindow(object):
                 self.progress_bar.grid(row=4, column=0, columnspan=3, pady=10)
 
                 # Post Editing Thread
-                self.running_threads.append(
-                    PostEditor(self, blast_reader, progress_var))
+                self.running_threads.append(PostEditor(self,
+                                                       blast_reader,
+                                                       progress_var))
                 self.blast_window.after(100, self.ape_queue_callback)
 
     def load_muse_callback(self):

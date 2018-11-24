@@ -37,8 +37,9 @@ class PostEditor(threading.Thread):
                   for t in range(num_threads)]
 
         for chunk in chunks:
-            self.chunk_threads.append(PostEditChunk(self.blast_reader, self.emb_en, self.emb_pt,
-                                                    chunk, self.queue_threads_in, self.queue_threads_out))
+            self.chunk_threads.append(PostEditChunk(self.blast_reader,
+                                                    self.emb_en, self.emb_pt, chunk,
+                                                    self.queue_threads_in, self.queue_threads_out))
 
         content_list = ['' for _ in range(len(errors))]
         finished_threads = 0
