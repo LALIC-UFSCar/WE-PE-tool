@@ -54,6 +54,13 @@ class BLASTStatsWindow(object):
         self.blast_stats_table.column('#1', width=75, stretch=tk.YES)
         self.blast_stats_table.column('#2', width=50, stretch=tk.YES)
         self.blast_stats_table.grid(row=0, column=0, pady=10, padx=10, sticky='nsew')
+        self.stats_table_scroll = tk.Scrollbar(self.blast_stats_window,
+                                               command=self.blast_stats_table.yview,
+                                               orient=tk.VERTICAL)
+        self.stats_table_scroll.grid(row=0, column=1,
+                                     padx=(0, 10), pady=10,
+                                     sticky=tk.N + tk.S + tk.E)
+        self.blast_stats_table.configure(yscrollcommand=self.stats_table_scroll.set)
 
         self.insert_table_values()
 

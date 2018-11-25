@@ -8,6 +8,7 @@ from sklearn.linear_model import Perceptron
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import BernoulliNB
 from sklearn.metrics import classification_report
+from sklearn.base import clone
 from readers.read_blast import BlastReader
 from readers.read_giza import GIZAReader
 from utils import *
@@ -37,8 +38,9 @@ def test_two_steps(data, model):
         y_step1_train = y.loc[train]
         y_step1_train.loc[y_step1_train != 'correct'] = 'error'
         y_step1_train = lb_step1.fit_transform(y_step1_train)
+        print('Classes: {}'.format(lb_step1.classes_))
 
-        model_step1 = model
+        model_step1 = clone(model)
         model_step1.fit(X_step1_train, y_step1_train)
 
         X_step2_train = X.loc[train]
@@ -157,6 +159,9 @@ def main():
     print('------------------------')
     print('SVM')
     test_two_steps(data, LinearSVC())
+    print('------------------------')
+    print('SVM - Crammer-Singer')
+    test_two_steps(data, LinearSVC(multi_class='crammer_singer'))
     print('------------------------')
     print('Perceptron')
     test_two_steps(data, Perceptron(n_jobs=-1))

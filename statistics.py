@@ -1,6 +1,7 @@
+import sys
 from readers.read_ape import ApeReader
 
-FILE_PATH = '/home/marciolima/Downloads/FAPESP_NMT_test-a_truecased_300_APE_lex-incTrWord'
+FILE_PATH = sys.argv[1]
 
 ape_reader = ApeReader(FILE_PATH)
 

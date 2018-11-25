@@ -27,9 +27,7 @@ class PostEditor(threading.Thread):
             [self.window.error_type.get()])
 
         save_file_content = ''
-        save_file_content += '@annotations\n'
-        save_file_content += str(self.window.app.cur_line)
-        save_file_content += '\n'
+        save_file_content += '@annotations\n-1\n'
         error_num = 0
 
         num_threads = cpu_count() - 1
@@ -39,8 +37,9 @@ class PostEditor(threading.Thread):
                   for t in range(num_threads)]
 
         for chunk in chunks:
-            self.chunk_threads.append(PostEditChunk(self.blast_reader, self.emb_en, self.emb_pt,
-                                                    chunk, self.queue_threads_in, self.queue_threads_out))
+            self.chunk_threads.append(PostEditChunk(self.blast_reader,
+                                                    self.emb_en, self.emb_pt, chunk,
+                                                    self.queue_threads_in, self.queue_threads_out))
 
         content_list = ['' for _ in range(len(errors))]
         finished_threads = 0

@@ -4,7 +4,7 @@ import tkinter as tk
 import tkinter.filedialog as fdialog
 from readers.read_ape import ApeReader
 import gui.error_identification_window as error_ident
-from .ape_window import PostEditWindow
+from .ape_window import PostEditWindow, CorrectSentencesWindow
 from .blast_statistics_window import BLASTStatsWindow
 
 
@@ -28,6 +28,10 @@ class Application(object):
         self.menubar = tk.Menu(self.master)
         self.apemenu = tk.Menu(self.menubar, tearoff=0)
         self.apemenu.add_command(label=_('Open'), command=self.load_ape_file)
+        self.apemenu.add_command(label=_('Generate Suggestions'),
+                                 command=lambda: PostEditWindow(self))
+        self.apemenu.add_command(label=_('Correct Sentences'),
+                                 command=lambda: CorrectSentencesWindow(self))
 
         # Error Identification menu
         self.error_ident_menu = tk.Menu(self.apemenu, tearoff=0)
@@ -35,16 +39,12 @@ class Application(object):
                                           command=lambda: error_ident.TrainModelWindow(self))
         self.error_ident_menu.add_command(label=_('Test'),
                                           command=lambda: error_ident.TestModelWindow(self))
-        self.error_ident_menu.add_command(label=_('Run'),
-                                          command=lambda: print)
         self.apemenu.add_cascade(label=_('Error identification'),
                                  menu=self.error_ident_menu)
 
         self.menubar.add_cascade(label=_('APE'), menu=self.apemenu)
 
         self.blastmenu = tk.Menu(self.menubar, tearoff=0)
-        self.blastmenu.add_command(
-            label=_('Open'), command=lambda: PostEditWindow(self))
         self.blastmenu.add_command(
             label=_('Statistics'), command=lambda: BLASTStatsWindow(self))
         self.menubar.add_cascade(label='BLAST', menu=self.blastmenu)
@@ -158,8 +158,8 @@ class Application(object):
             # Update source text
             self.src_text.config(state=tk.NORMAL)
             self.src_text.delete('1.0', tk.END)
-            self.src_text.insert(
-                'end', ' '.join(self.ape_reader.src_lines[self.cur_line]))
+            self.src_text.insert('end',
+                                 ' '.join(self.ape_reader.src_lines[self.cur_line]))
             # Get aligned error words columns
             word_col = list()
             for i in self.ape_reader.error_lines[self.cur_line][0]:

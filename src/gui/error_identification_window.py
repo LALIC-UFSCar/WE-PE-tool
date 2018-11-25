@@ -39,7 +39,7 @@ class TrainModelWindow(object):
         self.model_type = tk.StringVar(self.train_model_widget)
         self.model_type.set(MODELS[0])
         self.model_label = tk.Label(
-            self.train_model_widget, text=_('Error type'))
+            self.train_model_widget, text=_('Model type'))
         self.model_label.grid(row=2, column=0, pady=10)
         self.model_menu = tk.OptionMenu(
             self.train_model_widget, self.model_type, *MODELS)
@@ -77,7 +77,7 @@ class TrainModelWindow(object):
                 self.blast_path_text.config(state=tk.DISABLED)
 
     def run_train_model(self):
-        """Starts the traning for the model.
+        """Starts the training for the model.
         Creates a new ErrorIdentification object then starts a thread for the training.
         Also displays the progressbar.
         """
@@ -113,7 +113,7 @@ class TrainModelWindow(object):
             self.error_ident.stop = True
 
     def cancel_train_model(self):
-        """Handles the canceling of a training.
+        """Handles the cancelling of a training.
         If there is no training running, it closes the window.
         """
         if self.error_ident:
@@ -126,7 +126,7 @@ class TrainModelWindow(object):
 
     def close_window(self):
         """Handles the window close.
-        If there is a traning running, it should be cancelled first.
+        If there is a training running, it should be cancelled first.
         """
         if self.error_ident:
             if not self.error_ident.stop:
@@ -192,12 +192,12 @@ class TestModelWindow(object):
 
         # Done
         self.done_button = tk.Button(
-            self.test_model_widget, text=_('Done'), command=print)
+            self.test_model_widget, text=_('Done'), command=self.run_test_model)
         self.done_button.grid(row=3, column=0, columnspan=2, pady=10)
 
         # Cancel
         self.cancel_button = tk.Button(
-            self.test_model_widget, text=_('Cancel'), command=print)
+            self.test_model_widget, text=_('Cancel'), command=self.cancel_test_model)
         self.cancel_button.grid(row=3, column=1, columnspan=3, pady=10)
 
         # Progress bar
@@ -233,9 +233,45 @@ class TestModelWindow(object):
                 self.model_path_text.insert('end', filename.name)
                 self.model_path_text.config(state=tk.DISABLED)
 
-    def cancel_train_model(self):
-        """Handles the canceling of a training.
-        If there is no training running, it closes the window.
+    def run_test_model(self):
+        """Starts the test for the model.
+        Creates a new ErrorIdentification object then starts a thread for the classification.
+        Also displays the progressbar.
+        """
+        with open(self.filenames['model'], 'rb') as _file:
+            self.error_ident = pickle.load(_file)
+        test_thread = threading.Thread(target=self.test_model)
+        test_thread.start()
+
+        self.progress_bar.grid(row=4, column=0, columnspan=2, pady=10)
+        self.progress_bar.start(50)
+        self.progress_bar.after(5, self.update_progress_bar_callback)
+
+    def test_model(self):
+        """Performs the test of the model in a separate
+        thread created by `self.run_test_model`. Also saves the classification
+        in a BLAST file.
+        """
+        try:
+            assert self.filenames['src']
+            assert self.filenames['sys']
+            assert self.filenames['model']
+        except (AssertionError, KeyError):
+            tk.messagebox.showerror(_('Select files'), _('It is necessary to select all files.'))
+        else:
+            save_filename = self.filenames['sys'] + '-blast'
+            _class = self.error_ident.classify(self.filenames['src'],
+                                               self.filenames['sys'])
+
+            if not self.error_ident.stop:
+                with open(save_filename, 'w') as _file:
+                    _file.write(_class)
+                    tk.messagebox.showinfo(_('Saved'), _('File saved as: ') + save_filename)
+            self.error_ident.stop = True
+
+    def cancel_test_model(self):
+        """Handles the cancelling of a test.
+        If there is no test running, it closes the window.
         """
         if self.error_ident:
             if self.error_ident.stop:
@@ -251,7 +287,7 @@ class TestModelWindow(object):
         """
         if self.error_ident:
             if not self.error_ident.stop:
-                self.cancel_train_model()
+                self.cancel_test_model()
         self.test_model_window.destroy()
 
     def update_progress_bar_callback(self):
