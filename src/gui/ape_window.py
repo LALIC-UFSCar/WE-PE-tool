@@ -428,12 +428,13 @@ class CorrectSentencesWindow(object):
                         break
 
                     words_to_ignore = list()
-                    for index in error[1]:
-                        words_to_ignore.append(sent[index])
-                        del sent[index]
-                    suggestions = closest_words(blast_reader.src_lines[i][error[0][0]],
-                                                en, pt, words_to_ignore)
-                    sent.insert(error[1][0], suggestions[0][0])
+                    if error[0][0] >= 0:
+                        for index in error[1]:
+                            words_to_ignore.append(sent[index])
+                            del sent[index]
+                        suggestions = closest_words(blast_reader.src_lines[i][error[0][0]],
+                                                    en, pt, words_to_ignore)
+                        sent.insert(error[1][0], suggestions[0][0])
             file_content += ' '.join(sent)
             file_content += '\n'
         self.progress_bar.stop()
