@@ -515,6 +515,7 @@ class ErrorIdentification(object):
                     data = data[self.features]
 
                     X = data.loc[:, data.columns != 'target']
+                    X = X.fillna(value=0, inplace=True)
                     prediction_step1 = self.model_step1.predict(X)
                     prediction_step1 = self.lb_step1.inverse_transform(prediction_step1)[0]
 
