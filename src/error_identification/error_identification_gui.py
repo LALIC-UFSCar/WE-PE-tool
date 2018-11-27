@@ -11,7 +11,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import Perceptron
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import BernoulliNB
 from readers.read_blast import BlastReader
 from readers.read_giza import GIZAReader
 
@@ -456,7 +456,7 @@ class ErrorIdentification(object):
         elif model == 'Random Forest':
             classifier = RandomForestClassifier(n_estimators=10)
         elif model == 'Naive Bayes':
-            classifier = GaussianNB()
+            classifier = BernoulliNB()
 
         if classifier is not None:
             classifier.fit(X, y)
