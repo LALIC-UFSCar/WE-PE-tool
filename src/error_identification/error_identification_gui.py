@@ -11,7 +11,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import Perceptron
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import BernoulliNB
 from readers.read_blast import BlastReader
 from readers.read_giza import GIZAReader
 
@@ -456,7 +456,7 @@ class ErrorIdentification(object):
         elif model == 'Random Forest':
             classifier = RandomForestClassifier(n_estimators=10)
         elif model == 'Naive Bayes':
-            classifier = GaussianNB()
+            classifier = BernoulliNB()
 
         if classifier is not None:
             classifier.fit(X, y)
@@ -485,8 +485,8 @@ class ErrorIdentification(object):
         if not self.stop:
             alignments = self.align_sentences(src_filename, sys_filename)
 
-        return_blast = '#Sentencetypes src ref sys'
-        return_blast += '#catfile lalic-catsv2'
+        return_blast = '#Sentencetypes src ref sys\n'
+        return_blast += '#catfile lalic-catsv2\n'
 
         for (i, sent) in enumerate(tagged_lines):
             if self.stop:
@@ -515,6 +515,7 @@ class ErrorIdentification(object):
                     data = data[self.features]
 
                     X = data.loc[:, data.columns != 'target']
+                    X.fillna(value=0, inplace=True)
                     prediction_step1 = self.model_step1.predict(X)
                     prediction_step1 = self.lb_step1.inverse_transform(prediction_step1)[0]
 
