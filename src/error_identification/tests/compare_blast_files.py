@@ -96,6 +96,7 @@ def calcula_matriz_confusao():
     print(indices_matriz)
     matprint(matriz)
 
+
 def matprint(mat, fmt="g"):
     col_maxes = [max([len(("{:"+fmt+"}").format(x)) for x in col]) for col in mat.T]
     for x in mat:
