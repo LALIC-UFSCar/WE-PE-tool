@@ -485,8 +485,8 @@ class ErrorIdentification(object):
         if not self.stop:
             alignments = self.align_sentences(src_filename, sys_filename)
 
-        return_blast = '#Sentencetypes src ref sys'
-        return_blast += '#catfile lalic-catsv2'
+        return_blast = '#Sentencetypes src ref sys\n'
+        return_blast += '#catfile lalic-catsv2\n'
 
         for (i, sent) in enumerate(tagged_lines):
             if self.stop:
