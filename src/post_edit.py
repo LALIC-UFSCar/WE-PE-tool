@@ -109,7 +109,7 @@ class PostEditChunk(threading.Thread):
                 sys_sentence = self.blast_reader.sys_lines[line]
                 candidates = list()
                 for i in error[1][0]:
-                    if i > 0:
+                    if i > -1:
                         candidates.extend(['-.-'.join([w[0], 'white']) for w in closest_words(
                             sentence_to_correct[i], self.emb_en, self.emb_pt,
                             words_to_ignore=[sys_sentence[j] for j in error[1][1]])])
