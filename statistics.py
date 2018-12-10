@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys
 from readers.read_ape import ApeReader
 
@@ -12,20 +13,23 @@ for k in ape_reader.corrections:
     flat = [sub[1] for sub in k]
     cores.append(flat)
 
-print('\nEfetivamente avaliadas: {}'.format(
+print('Nenhuma sugestao de correcao: {}'.format(
+    len([x for x in cores if len(x) < 2])))
+
+print('Efetivamente avaliadas: {}'.format(
     len([x for x in cores if 'red' in x or 'green' in x or 'yellow' in x])))
 
-print('\nPelo menos uma sugestao correta: {}'.format(
+print('Pelo menos uma sugestao correta: {}'.format(
     len([x for x in cores if 'green' in x])))
 
-print('\nPelo menos uma sugestao parcialmente correta: {}'.format(
+print('Pelo menos uma sugestao parcialmente correta: {}'.format(
     len([x for x in cores if 'yellow' in x])))
 
-print('\nPelo menos uma sugestao parcialmente correta e nenhuma correta: {}'.format(
+print('Pelo menos uma sugestao parcialmente correta e nenhuma correta: {}'.format(
     len([x for x in cores if 'yellow' in x and 'green' not in x])))
 
-print('\nPelo menos uma sugestao errada: {}'.format(
+print('Pelo menos uma sugestao errada: {}'.format(
     len([x for x in cores if 'red' in x])))
 
-print('\nTodas as sugestoes erradas: {}'.format(
+print('Todas as sugestoes erradas: {}'.format(
     len([x for x in cores if 'red' in x and 'green' not in x and 'yellow' not in x])))
