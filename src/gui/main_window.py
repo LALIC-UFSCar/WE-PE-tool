@@ -19,7 +19,7 @@ class Application(object):
         self.master.title(_('Automatic Post-Editing'))
 
         self.cur_line = -1
-        self.errors = ['lex-incTrWord', 'lex-notTrWord']
+        self.errors = ['lex-incTrWord', 'lex-notTrWord', 'morph-numberConc', 'morph-genderConc']
 
         self.filename = ''
         self.ape_reader = None

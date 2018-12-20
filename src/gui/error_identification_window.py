@@ -7,7 +7,7 @@ from error_identification.error_identification_gui import ErrorIdentification
 
 # Training models
 MODELS = ['Decision Tree', 'SVM', 'Perceptron', 'Random Forest', 'Naive Bayes']
-ERROR_TYPES = ['lex-notTrWord', 'lex-incTrWord']
+ERROR_TYPES = ['lex-notTrWord', 'lex-incTrWord', 'morph-numberConc', 'morph-genderConc']
 
 
 class TrainModelWindow(object):
@@ -17,6 +17,7 @@ class TrainModelWindow(object):
     """
 
     def __init__(self, master):
+        self.master = master
         self.train_model_window = tk.Toplevel(master.master)
         self.train_model_window.title(_('Train Error Identification Model'))
         self.train_model_widget = tk.Frame(self.train_model_window)
@@ -103,7 +104,7 @@ class TrainModelWindow(object):
         else:
             self.error_ident.train(self.filenames['blast'],
                                    self.model_type.get(),
-                                   error_types=ERROR_TYPES)
+                                   error_types=self.master.errors)
             if not self.error_ident.stop:
                 # Training was not canceled, save model
                 save_filename = 'model_' + self.model_type.get().replace(' ', '_') + '.pkl'
